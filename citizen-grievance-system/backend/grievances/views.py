@@ -17,6 +17,8 @@ from .documents import (
 )
 from .services import (
     active_work_to_dict,
+    admin_approve_false_report,
+    admin_approve_resolution,
     assign_complaint,
     complaint_to_dict,
     create_audit,
@@ -26,8 +28,11 @@ from .services import (
     ensure_default_departments,
     escalate_complaint,
     geoapify_reverse,
+    geoapify_route,
     geoapify_search,
     generate_work_id,
+    get_officer_for_user,
+    haversine_km,
     mark_false_complaint,
     notification_to_dict,
     normalize_category,
@@ -39,7 +44,14 @@ from .services import (
     update_complaint_status,
     user_to_dict,
     verify_mobile_otp,
+    worker_report_false_complaint,
+    worker_request_more_time,
+    worker_resolve_complaint,
+    worker_start_complaint,
+    worker_update_location,
 )
+
+WORKER_RADIUS_KM = 4
 
 
 def ok(data=None, status=200):
@@ -82,9 +94,43 @@ def is_admin(user):
 
 
 def can_view_complaint(user, complaint):
-    if is_staff(user):
+    if is_admin(user):
         return True
+    if user and user.role == "officer":
+        officer = get_officer_for_user(user)
+        assigned_to_worker = bool(
+            officer and complaint.assigned_officer and str(complaint.assigned_officer.id) == str(officer.id)
+        )
+        return assigned_to_worker or complaint_near_officer(complaint, officer)
     return complaint.citizen and str(complaint.citizen.id) == str(user.id)
+
+
+def require_worker(request):
+    user, response, status = require_user(request)
+    if response:
+        return None, None, response, status
+    if user.role in ADMIN_ROLES:
+        return user, None, None, None
+    if user.role != "officer":
+        return None, None, {"error": "Worker access required."}, 403
+    officer = get_officer_for_user(user)
+    if not officer:
+        return None, None, {"error": "No active officer profile is linked to this login."}, 403
+    return user, officer, None, None
+
+
+def complaint_near_officer(complaint, officer, radius_km=WORKER_RADIUS_KM):
+    if not officer:
+        return True
+    if not complaint.assigned_department or not officer.department:
+        return False
+    if str(complaint.assigned_department.id) != str(officer.department.id):
+        return False
+    if officer.latitude is None or officer.longitude is None:
+        return False
+    if complaint.latitude is None or complaint.longitude is None:
+        return False
+    return haversine_km(officer.latitude, officer.longitude, complaint.latitude, complaint.longitude) <= radius_km
 
 
 def require_admin(request):
@@ -173,6 +219,56 @@ class VerifyOtpView(APIView):
         )
 
 
+class WorkerSignupView(APIView):
+    def post(self, request):
+        mobile_number = str(request.data.get("mobile_number", "")).strip()
+        name = str(request.data.get("name", "")).strip()
+        department_id = request.data.get("department_id")
+        if not mobile_number or not name or not department_id:
+            return error("name, mobile_number and department_id are required.")
+        if not ObjectId.is_valid(str(department_id)):
+            return error("Invalid department_id.")
+        department = Department.objects(id=department_id, is_active=True).first()
+        if not department:
+            return error("Department not found.", status=404)
+
+        user = User.objects(mobile_number=mobile_number).modify(
+            upsert=True,
+            new=True,
+            set__mobile_number=mobile_number,
+            set__name=name,
+            set__role="officer",
+            set__is_blocked=False,
+            set__blocked_reason="",
+        )
+        officer_updates = {
+            "set__name": name,
+            "set__mobile_number": mobile_number,
+            "set__department": department,
+            "set__zones": request.data.get("zones", []),
+            "set__is_active": True,
+        }
+        email = str(request.data.get("email") or "").strip()
+        if email:
+            officer_updates["set__email"] = email
+        officer = Officer.objects(mobile_number=mobile_number).modify(
+            upsert=True,
+            new=True,
+            **officer_updates,
+        )
+        user, otp = create_otp_for_mobile(mobile_number)
+        response = {
+            "message": "Worker profile created. Verify OTP to login.",
+            "user": user_to_dict(user),
+            "officer": officer_to_dict(officer),
+            "otp_expires_minutes": settings.OTP_EXPIRY_MINUTES,
+        }
+        if settings.OTP_DEV_MODE:
+            response["dev_otp"] = otp
+            response["note"] = "Prototype mode: OTP is returned in response. No SMS API is used."
+        return ok(response, status=201)
+
+
 class MeView(APIView):
     def get(self, request):
         user, response, status = require_user(request)
@@ -209,6 +305,9 @@ class ComplaintListCreateView(APIView):
             query = query.filter(assigned_department=assigned_department)
         if user.role == "citizen":
             query = query.filter(citizen=user)
+        elif user.role == "officer":
+            officer = get_officer_for_user(user)
+            query = query.filter(assigned_officer=officer) if officer else Complaint.objects(id__exists=False)
         elif citizen_id and ObjectId.is_valid(citizen_id):
             query = query.filter(citizen=citizen_id)
         if search:
@@ -423,6 +522,131 @@ class ComplaintFeedbackView(APIView):
                     actor=user.mobile_number,
                 )
         return ok({"complaint": complaint_to_dict(complaint)})
+
+
+class WorkerComplaintsView(APIView):
+    def get(self, request):
+        user, officer, response, status = require_worker(request)
+        if response:
+            return ok(response, status=status)
+
+        query = Complaint.objects(is_valid_grievance=True).filter(status__nin=["rejected", "closed", "false_review", "resolution_review"])
+        if officer:
+            query = query.filter(assigned_department=officer.department)
+
+        view = request.query_params.get("view", "")
+        now = datetime.utcnow()
+        if view == "high-priority":
+            query = query.filter(priority__in=["Critical", "High"])
+        elif view == "overdue":
+            query = query.filter(sla_deadline__lt=now, status__nin=["resolved", "closed", "escalated"])
+        elif view == "resolved":
+            query = query.filter(status="resolved")
+        elif view == "assigned":
+            query = query.filter(status__in=["assigned", "in_progress"])
+
+        limit = min(int(request.query_params.get("limit", 100)), 150)
+        complaints = [
+            item for item in query.order_by("-created_at")[:300]
+            if not officer or complaint_near_officer(item, officer)
+        ][:limit]
+        return ok(
+            {
+                "worker": officer_to_dict(officer),
+                "radius_km": WORKER_RADIUS_KM,
+                "results": [complaint_to_dict(item) for item in complaints],
+            }
+        )
+
+
+class WorkerLocationView(APIView):
+    def patch(self, request):
+        user, officer, response, status = require_worker(request)
+        if response:
+            return ok(response, status=status)
+        if not officer:
+            return error("Admin users do not have a worker location profile.", status=400)
+        if request.data.get("latitude") in (None, "") or request.data.get("longitude") in (None, ""):
+            return ok(
+                {
+                    "worker": officer_to_dict(officer),
+                    "message": "Worker location not updated because coordinates were not provided.",
+                }
+            )
+        try:
+            worker_update_location(officer, request.data.get("latitude"), request.data.get("longitude"))
+        except ValueError as exc:
+            return error(str(exc), status=400)
+        return ok({"worker": officer_to_dict(officer)})
+
+
+class WorkerComplaintActionView(APIView):
+    parser_classes = [JSONParser, FormParser, MultiPartParser]
+
+    def post(self, request, complaint_id, action):
+        user, officer, response, status = require_worker(request)
+        if response:
+            return ok(response, status=status)
+        complaint = find_complaint(complaint_id)
+        if not complaint:
+            return error("Complaint not found.", status=404)
+        if officer and not complaint_near_officer(complaint, officer):
+            return error("This complaint is outside your department or 4 km field radius.", status=403)
+        if officer and action != "start":
+            assigned_to_this_worker = bool(
+                complaint.assigned_officer and str(complaint.assigned_officer.id) == str(officer.id)
+            )
+            if not assigned_to_this_worker:
+                return error("Start this field job before submitting worker actions.", status=403)
+        if officer and action == "start":
+            complaint.assigned_officer = officer
+
+        try:
+            if action == "start":
+                worker_start_complaint(complaint, user)
+            elif action == "false-report":
+                worker_report_false_complaint(
+                    complaint,
+                    user,
+                    request.data.get("note", ""),
+                    evidence_files=request.FILES.getlist("evidence"),
+                )
+            elif action == "resolve":
+                worker_resolve_complaint(
+                    complaint,
+                    user,
+                    request.data.get("note", ""),
+                    evidence_files=request.FILES.getlist("evidence"),
+                )
+            elif action == "more-time":
+                worker_request_more_time(complaint, user, request.data.get("note", ""))
+            else:
+                return error("Unknown worker action.", status=404)
+        except ValueError as exc:
+            return error(str(exc), status=400)
+
+        return ok({"complaint": complaint_to_dict(complaint)})
+
+class AdminComplaintApprovalView(APIView):
+    def post(self, request, complaint_id, action):
+        user, response, status = require_admin(request)
+        if response:
+            return ok(response, status=status)
+        complaint = find_complaint(complaint_id)
+        if not complaint:
+            return error("Complaint not found.", status=404)
+        note = request.data.get("note", "")
+        if action == "approve-false":
+            if complaint.status != "false_review":
+                return error("Only worker false-report review complaints can be approved as false.", status=400)
+            result = admin_approve_false_report(complaint, user, note)
+            return ok(result)
+        if action == "approve-resolution":
+            if complaint.status != "resolution_review":
+                return error("Only worker resolution review complaints can be approved as resolved.", status=400)
+            admin_approve_resolution(complaint, user, note)
+            return ok({"complaint": complaint_to_dict(complaint)})
+        return error("Unknown admin approval action.", status=404)
 
 
 class ActiveWorkListCreateView(APIView):
@@ -701,6 +925,31 @@ class ClassificationFeedbackView(APIView):
         return ok({"message": "Classification feedback saved."}, status=201)
 
 
+
+class GeoRouteView(APIView):
+    def get(self, request):
+        user, officer, response, status = require_worker(request)
+        if response:
+            return ok(response, status)
+        try:
+            from_lat = float(request.query_params.get("from_lat"))
+            from_lon = float(request.query_params.get("from_lon"))
+            to_lat = float(request.query_params.get("to_lat"))
+            to_lon = float(request.query_params.get("to_lon"))
+        except (TypeError, ValueError):
+            return error("from_lat, from_lon, to_lat, and to_lon are required.")
+
+        if officer:
+            worker_update_location(officer, from_lat, from_lon)
+
+        mode = request.query_params.get("mode") or "drive"
+        try:
+            return ok(geoapify_route(from_lat, from_lon, to_lat, to_lon, mode=mode))
+        except ValueError as exc:
+            return error(str(exc), status=400)
+        except Exception as exc:
+            return error(f"Could not generate route: {exc}", status=502)
+
 class GeoReverseView(APIView):
     def get(self, request):
         try:
@@ -722,3 +971,9 @@ class GeoSearchView(APIView):
             return error(str(exc), status=503)
         except Exception as exc:
             return error(f"Geoapify search failed: {exc}", status=502)
+
+
+
+
+
+

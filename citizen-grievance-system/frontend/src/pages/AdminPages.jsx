@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Badge,
   Button,
@@ -20,6 +20,8 @@ const adminNav = [
   { to: "/admin", label: "Dashboard", icon: "dashboard" },
   { to: "/admin/complaints", label: "Complaints", icon: "list_alt" },
   { to: "/admin/rejected", label: "AI Rejections", icon: "block" },
+  { to: "/admin/review-requests", label: "Review Requests", icon: "fact_check" },
+  { to: "/admin/resolved", label: "Resolved", icon: "check_circle" },
   { to: "/admin/manual-review", label: "Manual Review", icon: "fact_check" },
   { to: "/admin/active-work", label: "Active Work", icon: "construction" },
   { to: "/admin/escalations", label: "Escalations", icon: "priority_high" },
@@ -118,7 +120,11 @@ export function ComplaintsQueuePage() {
   });
   useEffect(() => {
     const effectiveFilters = { ...filters, search: filters.search || searchParams.get("search") || "" };
-    api.listComplaints(effectiveFilters).then((data) => setComplaints(sortByPriority((data.results || []).map(mapComplaint)))).catch(() => setComplaints([]));
+    api.listComplaints(effectiveFilters).then((data) => {
+      const hiddenStatuses = new Set(["resolved", "closed", "resolution_review", "false_review", "rejected"]);
+      const rows = (data.results || []).map(mapComplaint).filter((item) => !hiddenStatuses.has(item.rawStatus));
+      setComplaints(sortByPriority(rows));
+    }).catch(() => setComplaints([]));
   }, [filters, searchParams]);
   const columns = [
     { key: "id", label: "Complaint ID" },
@@ -148,6 +154,119 @@ export function ComplaintsQueuePage() {
   );
 }
 
+export function AdminReviewRequestsPage() {
+  const [complaints, setComplaints] = useState([]);
+  const [message, setMessage] = useState("");
+
+  async function loadReviewRequests() {
+    try {
+      const [falseData, resolutionData] = await Promise.all([
+        api.listComplaints({ status: "false_review", limit: 100 }),
+        api.listComplaints({ status: "resolution_review", limit: 100 }),
+      ]);
+      const rows = [...(falseData.results || []), ...(resolutionData.results || [])].map(mapComplaint);
+      setComplaints(sortByPriority(rows));
+    } catch (error) {
+      setComplaints([]);
+      setMessage(error.message || "Could not load review requests.");
+    }
+  }
+
+  useEffect(() => {
+    loadReviewRequests();
+  }, []);
+
+  async function approve(row) {
+    setMessage("");
+    try {
+      if (row.rawStatus === "false_review") {
+        await api.approveFalseReport(row.id, "Admin approved worker camera evidence as a false complaint.");
+        setMessage("False complaint approved. It was removed from citizen, admin, and worker complaint lists; citizen was notified.");
+      } else {
+        await api.approveResolution(row.id, "Admin approved worker resolution photo evidence.");
+        setMessage("Resolution approved. It moved out of active complaints and into the resolved page.");
+      }
+      await loadReviewRequests();
+    } catch (error) {
+      setMessage(error.message || "Could not approve this request.");
+    }
+  }
+
+  const columns = [
+    { key: "id", label: "Complaint ID" },
+    { key: "citizen", label: "Citizen" },
+    { key: "category", label: "Department" },
+    { key: "priority", label: "Priority", render: (row) => <Badge tone={priorityTone(row.priority)}>{row.priority}</Badge> },
+    { key: "status", label: "Review Type", render: (row) => <Badge tone={row.rawStatus === "false_review" ? "red" : "green"}>{row.status}</Badge> },
+    { key: "proof", label: "Evidence", render: (row) => `${row.workerFalseEvidenceCount + row.resolutionEvidenceCount} file(s)` },
+    { key: "location", label: "Location" },
+  ];
+
+  return (
+    <AdminShell>
+      <PageHeader title="Review Requests" subtitle="Approve worker-submitted false-report and resolution evidence before final action." />
+      {message ? <p className="mb-4 rounded-md border border-border bg-surface-soft p-3 text-sm text-text-muted">{message}</p> : null}
+      {complaints.length === 0 ? (
+        <EmptyState title="No review requests" message="Worker false-report and resolution requests will appear here after photo verification." />
+      ) : (
+        <Table
+          columns={columns}
+          rows={complaints}
+          renderActions={(row) => (
+            <div className="flex flex-wrap gap-3">
+              <Link className="font-semibold text-secondary hover:underline" to={`/admin/complaints/${row.id}`}>
+                View
+              </Link>
+              <button className="font-semibold text-primary hover:underline" type="button" onClick={() => approve(row)}>
+                {row.rawStatus === "false_review" ? "Approve False" : "Approve Resolved"}
+              </button>
+            </div>
+          )}
+        />
+      )}
+    </AdminShell>
+  );
+}
+
+export function AdminResolvedPage() {
+  const [complaints, setComplaints] = useState([]);
+
+  useEffect(() => {
+    api
+      .listComplaints({ status: "resolved", limit: 100 })
+      .then((data) => setComplaints(sortByPriority((data.results || []).map(mapComplaint))))
+      .catch(() => setComplaints([]));
+  }, []);
+
+  const columns = [
+    { key: "id", label: "Complaint ID" },
+    { key: "citizen", label: "Citizen" },
+    { key: "category", label: "Department" },
+    { key: "priority", label: "Priority", render: (row) => <Badge tone={priorityTone(row.priority)}>{row.priority}</Badge> },
+    { key: "location", label: "Location" },
+    { key: "submittedAt", label: "Submitted" },
+    { key: "status", label: "Status", render: (row) => <Badge tone="green">{row.status}</Badge> },
+  ];
+
+  return (
+    <AdminShell>
+      <PageHeader title="Resolved Complaints" subtitle="Complaints approved by admin after worker photo verification." />
+      {complaints.length === 0 ? (
+        <EmptyState title="No resolved complaints" message="Approved resolutions will be archived here for admin records." />
+      ) : (
+        <Table
+          columns={columns}
+          rows={complaints}
+          renderActions={(row) => (
+            <Link className="font-semibold text-secondary hover:underline" to={`/admin/complaints/${row.id}`}>
+              View
+            </Link>
+          )}
+        />
+      )}
+    </AdminShell>
+  );
+}
 export function AIRejectionsPage() {
   const [complaints, setComplaints] = useState([]);
   const [allComplaints, setAllComplaints] = useState([]);
@@ -233,6 +352,7 @@ export function AIRejectionsPage() {
 
 export function AdminComplaintDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [complaint, setComplaint] = useState(null);
   const [falseNote, setFalseNote] = useState("");
   const [falseEvidence, setFalseEvidence] = useState([]);
@@ -268,8 +388,8 @@ export function AdminComplaintDetailPage() {
       setActionMessage("Add a verification note before marking this complaint false.");
       return;
     }
-    if (!falseEvidence.length) {
-      setActionMessage("Upload a photo or video from the place before marking this complaint false.");
+    if (!falseEvidence.length && !complaint.workerFalseEvidenceCount) {
+      setActionMessage("Upload evidence, or review worker-submitted camera evidence before marking this complaint false.");
       return;
     }
     try {
@@ -282,6 +402,26 @@ export function AdminComplaintDetailPage() {
     }
   }
 
+  async function approveWorkerFalseReport() {
+    setActionMessage("");
+    try {
+      await api.approveFalseReport(id, "Admin approved worker camera evidence as a false complaint.");
+      navigate("/admin/review-requests");
+    } catch (error) {
+      setActionMessage(error.message || "Could not approve false-report request.");
+    }
+  }
+
+  async function approveWorkerResolution() {
+    setActionMessage("");
+    try {
+      await api.approveResolution(id, "Admin approved worker resolution photo evidence.");
+      await refreshComplaint();
+      setActionMessage("Resolution approved and moved to resolved records.");
+    } catch (error) {
+      setActionMessage(error.message || "Could not approve resolution request.");
+    }
+  }
   async function submitAdminResponse(event) {
     event.preventDefault();
     setActionMessage("");
@@ -321,6 +461,7 @@ export function AdminComplaintDetailPage() {
                 ["Status", complaint.status],
                 ["Approved ETA", complaint.eta],
                 ["Citizen Proof", complaint.hasCitizenProof ? `${complaint.citizenProofCount} file(s) uploaded` : "No proof uploaded"],
+                ["Worker False Evidence", complaint.workerFalseEvidenceCount ? `${complaint.workerFalseEvidenceCount} file(s) awaiting review` : "None"],
                 ["Admin Response", complaint.adminResponse || "Waiting for admin response"],
                 ["Submitted", complaint.submittedAt],
               ]}
@@ -364,6 +505,23 @@ export function AdminComplaintDetailPage() {
           </Card>
         </div>
         <aside className="space-y-6">
+          {["false_review", "resolution_review"].includes(complaint.rawStatus) ? (
+            <Card className="p-5">
+              <h2 className="mb-3 font-display text-lg font-bold text-primary">Admin Review Decision</h2>
+              <p className="mb-4 text-sm text-text-muted">
+                Worker evidence is pending admin approval before the complaint is removed or marked resolved.
+              </p>
+              {complaint.rawStatus === "false_review" ? (
+                <Button variant="danger" type="button" onClick={approveWorkerFalseReport}>
+                  Approve False And Delete
+                </Button>
+              ) : (
+                <Button variant="primary" type="button" onClick={approveWorkerResolution}>
+                  Approve Resolution
+                </Button>
+              )}
+            </Card>
+          ) : null}
           <Card className="p-5">
             <h2 className="mb-4 font-display text-lg font-bold text-primary">Location</h2>
             <LiveMap points={[complaint]} height={260} />
@@ -782,7 +940,7 @@ export function AnalyticsPage() {
             </form>
           </div>
           {mapMessage ? <p className="mb-3 text-sm text-text-muted">{mapMessage}</p> : null}
-          <LiveMap points={(analytics?.heatmap_points || []).map(mapHeatPoint)} center={mapCenter} zoom={mapCenter ? 7 : 5} height={420} />
+          <LiveMap points={(analytics?.heatmap_points || []).map(mapHeatPoint)} center={mapCenter} zoom={mapCenter ? 7 : 5} height={420} heatmap />
         </Card>
       </div>
     </AdminShell>
@@ -1002,6 +1160,8 @@ function mapComplaint(item) {
     hasCitizenProof: Boolean(item.has_citizen_proof),
     citizenProofCount: item.citizen_proof_count || 0,
     falseValidationEvidenceCount: item.false_validation_evidence_count || 0,
+    workerFalseEvidenceCount: item.worker_false_evidence_count || 0,
+    resolutionEvidenceCount: item.resolution_evidence_count || 0,
     language: item.language || "-",
     translatedText: item.translated_text || "",
     translationSource: item.translation_source || "",
@@ -1064,15 +1224,23 @@ function mapActiveWork(item) {
 }
 
 function mapHeatPoint(item) {
+  const priority = item.priority || "Medium";
+  const heatConfig = {
+    Critical: { heatRadius: 3400, heatOpacity: 0.42, heatColor: "#dc2626" },
+    High: { heatRadius: 2800, heatOpacity: 0.36, heatColor: "#f97316" },
+    Medium: { heatRadius: 2200, heatOpacity: 0.3, heatColor: "#f59e0b" },
+    Low: { heatRadius: 1600, heatOpacity: 0.24, heatColor: "#22c55e" },
+  };
   return {
     id: item.id,
     latitude: item.latitude,
     longitude: item.longitude,
     category: item.category,
-    priority: item.priority,
+    priority,
     status: item.status,
     address: item.address,
     ward: item.ward,
+    ...(heatConfig[priority] || heatConfig.Medium),
   };
 }
 
@@ -1116,3 +1284,5 @@ function SettingsCard({ title, items }) {
     </Card>
   );
 }
+
+

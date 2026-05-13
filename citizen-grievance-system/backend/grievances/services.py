@@ -385,6 +385,9 @@ def officer_to_dict(officer):
         "email": officer.email,
         "department": department_to_dict(officer.department),
         "zones": officer.zones,
+        "latitude": officer.latitude,
+        "longitude": officer.longitude,
+        "last_location_at": serialize_datetime(officer.last_location_at),
         "senior_officer_id": officer.senior_officer_id,
         "is_active": officer.is_active,
     }
@@ -409,6 +412,12 @@ def complaint_to_dict(complaint):
     )
     false_evidence_count = len(
         [item for item in complaint.attachments if item.get("purpose") == "false_validation_evidence"]
+    )
+    worker_false_evidence_count = len(
+        [item for item in complaint.attachments if item.get("purpose") == "worker_false_report_evidence"]
+    )
+    resolution_evidence_count = len(
+        [item for item in complaint.attachments if item.get("purpose") == "resolution_evidence"]
     )
     return {
         "id": str(complaint.id),
@@ -464,6 +473,8 @@ def complaint_to_dict(complaint):
         "has_citizen_proof": citizen_proof_count > 0,
         "citizen_proof_count": citizen_proof_count,
         "false_validation_evidence_count": false_evidence_count,
+        "worker_false_evidence_count": worker_false_evidence_count,
+        "resolution_evidence_count": resolution_evidence_count,
         "timeline": complaint.timeline,
         "created_at": serialize_datetime(complaint.created_at),
         "updated_at": serialize_datetime(complaint.updated_at),
@@ -772,6 +783,12 @@ def select_officer(department, ward="", zone=""):
     return query.first()
 
 
+def get_officer_for_user(user):
+    if not user or user.role not in ("officer", "admin", "super_admin"):
+        return None
+    return Officer.objects(mobile_number=user.mobile_number, is_active=True).first()
+
+
 def add_timeline(complaint, event, message, actor=None):
     complaint.timeline.append(
         {
@@ -784,6 +801,8 @@ def add_timeline(complaint, event, message, actor=None):
 
 
 def create_notification(user, complaint, title, message, status="created"):
+    if not user:
+        return None
     return Notification(
         recipient=user,
         complaint=complaint,
@@ -791,6 +810,32 @@ def create_notification(user, complaint, title, message, status="created"):
         message=message,
         status=status,
     ).save()
+
+
+def create_admin_notifications(complaint, title, message, status="created"):
+    notifications = []
+    for admin_user in User.objects(role__in=["admin", "super_admin"], is_blocked=False):
+        notifications.append(create_notification(admin_user, complaint, title, message, status=status))
+    return notifications
+
+
+def create_worker_assignment_notification(complaint):
+    if not complaint.assigned_officer:
+        return None
+    worker_user = User.objects(mobile_number=complaint.assigned_officer.mobile_number).first()
+    if not worker_user:
+        return None
+    return create_notification(
+        worker_user,
+        complaint,
+        "New complaint assigned",
+        (
+            f"A {complaint.priority.lower()} priority complaint has arrived for "
+            f"{complaint.assigned_department.name if complaint.assigned_department else 'your department'} "
+            f"near {complaint.address or complaint.ward or 'the reported location'}."
+        ),
+        status="worker_alert",
+    )
 
 
 ALLOWED_ATTACHMENT_TYPES = (
@@ -961,6 +1006,7 @@ def process_complaint_ai(complaint_id):
                 "The department will send a response and approved ETA soon."
             ),
         )
+        create_worker_assignment_notification(complaint)
 
     return complaint
 
@@ -1112,6 +1158,191 @@ def update_complaint_status(complaint, status, note="", actor=None):
     return complaint
 
 
+def worker_update_location(officer, latitude, longitude):
+    if latitude in (None, "") or longitude in (None, ""):
+        raise ValueError("latitude and longitude are required.")
+    officer.latitude = float(latitude)
+    officer.longitude = float(longitude)
+    officer.last_location_at = utc_now()
+    officer.save()
+    return officer
+
+
+def worker_start_complaint(complaint, user):
+    complaint.status = "in_progress"
+    add_timeline(
+        complaint,
+        "worker_started",
+        "Worker accepted the complaint and started verification.",
+        actor=user.mobile_number if user else "worker",
+    )
+    complaint.save()
+    create_notification(
+        complaint.citizen,
+        complaint,
+        "Worker assigned",
+        "A department worker has accepted your complaint and started verification.",
+        status="in_progress",
+    )
+    return complaint
+
+
+def worker_report_false_complaint(complaint, user, note, evidence_files=None):
+    clean_note = (note or "").strip()
+    if not clean_note:
+        raise ValueError("verification note is required.")
+    evidence = save_uploaded_files(
+        evidence_files or [],
+        purpose="worker_false_report_evidence",
+        uploaded_by=user,
+    )
+    if not evidence:
+        raise ValueError("Camera photo evidence is required before sending a false-report review.")
+    complaint.status = "false_review"
+    complaint.manual_review_required = True
+    complaint.attachments.extend(evidence)
+    add_timeline(
+        complaint,
+        "worker_false_review_requested",
+        clean_note,
+        actor=user.mobile_number if user else "worker",
+    )
+    complaint.save()
+    Feedback(
+        complaint=complaint,
+        user=user,
+        type="worker_false_report",
+        comment=clean_note,
+        verification_note=clean_note,
+    ).save()
+    create_admin_notifications(
+        complaint,
+        "Worker false-report review",
+        "A worker submitted camera evidence claiming this complaint may be false. Admin review is required.",
+        status="false_review",
+    )
+    create_notification(
+        complaint.citizen,
+        complaint,
+        "Complaint under verification",
+        "A field worker has requested admin review for this complaint. Final decision will be made by admin.",
+        status="false_review",
+    )
+    return complaint
+
+
+def worker_resolve_complaint(complaint, user, note, evidence_files=None):
+    clean_note = (note or "").strip() or "Worker marked the issue as resolved with photo verification."
+    evidence = save_uploaded_files(
+        evidence_files or [],
+        purpose="resolution_evidence",
+        uploaded_by=user,
+    )
+    if not evidence:
+        raise ValueError("Resolution photo evidence is required.")
+    complaint.status = "resolution_review"
+    complaint.resolution_note = clean_note
+    complaint.attachments.extend(evidence)
+    add_timeline(
+        complaint,
+        "worker_resolution_review_requested",
+        clean_note,
+        actor=user.mobile_number if user else "worker",
+    )
+    complaint.save()
+    create_notification(
+        complaint.citizen,
+        complaint,
+        "Resolution under review",
+        "A department worker submitted resolution photo evidence. Admin will review it before final closure.",
+        status="resolution_review",
+    )
+    create_admin_notifications(
+        complaint,
+        "Resolution approval requested",
+        "A worker submitted resolution evidence. Admin approval is required before the complaint is marked resolved.",
+        status="resolution_review",
+    )
+    return complaint
+
+
+def admin_approve_resolution(complaint, user, note=""):
+    clean_note = (note or "").strip() or "Admin approved the worker resolution evidence."
+    complaint.status = "resolved"
+    add_timeline(
+        complaint,
+        "admin_resolution_approved",
+        clean_note,
+        actor=user.mobile_number if user else "admin",
+    )
+    complaint.save()
+    create_notification(
+        complaint.citizen,
+        complaint,
+        "Complaint resolved",
+        "Your complaint has been resolved after admin reviewed the field worker photo evidence.",
+        status="resolved",
+    )
+    return complaint
+
+
+def admin_approve_false_report(complaint, user, note=""):
+    clean_note = (note or "").strip() or "Admin approved the field worker false-report evidence."
+    citizen = complaint.citizen
+    tracking_id = complaint.tracking_id
+    add_timeline(
+        complaint,
+        "admin_false_report_approved",
+        clean_note,
+        actor=user.mobile_number if user else "admin",
+    )
+    complaint.save()
+    if citizen:
+        citizen.false_complaint_count += 1
+        if citizen.false_complaint_count >= settings.FALSE_COMPLAINT_BLOCK_THRESHOLD:
+            citizen.is_blocked = True
+            citizen.blocked_reason = "Repeated verified false complaints."
+        citizen.save()
+        Notification(
+            recipient=citizen,
+            complaint=None,
+            title="Complaint rejected",
+            message="Your complaint was rejected after admin reviewed field verification evidence.",
+            status="rejected",
+        ).save()
+    Notification.objects(complaint=complaint).delete()
+    Feedback.objects(complaint=complaint).delete()
+    AuditLog.objects(target_id=str(complaint.id)).delete()
+    complaint.delete()
+    return {"deleted": True, "tracking_id": tracking_id}
+
+
+def worker_request_more_time(complaint, user, note):
+    clean_note = (note or "").strip() or "Worker reported that this field issue needs more time."
+    complaint.status = "in_progress"
+    add_timeline(
+        complaint,
+        "worker_more_time_requested",
+        clean_note,
+        actor=user.mobile_number if user else "worker",
+    )
+    complaint.save()
+    create_notification(
+        complaint.citizen,
+        complaint,
+        "Work needs more time",
+        "The field worker reported that this issue needs more time. The department will continue working on it.",
+        status="in_progress",
+    )
+    create_admin_notifications(
+        complaint,
+        "Worker requested more time",
+        clean_note,
+        status="more_time_requested",
+    )
+    return complaint
+
+
 def assign_complaint(complaint, department_id=None, officer_id=None, note="", actor=None):
     if department_id:
         complaint.assigned_department = Department.objects(id=department_id).first()
@@ -1174,11 +1405,15 @@ def mark_false_complaint(complaint, user, note, evidence_files=None):
         purpose="false_validation_evidence",
         uploaded_by=user,
     )
-    if not evidence:
+    has_worker_evidence = any(
+        item.get("purpose") == "worker_false_report_evidence" for item in complaint.attachments
+    )
+    if not evidence and not has_worker_evidence:
         raise ValueError("Photo or video evidence is required before marking a complaint false.")
     complaint.is_false = True
     complaint.false_reason = note
-    complaint.attachments.extend(evidence)
+    if evidence:
+        complaint.attachments.extend(evidence)
     add_timeline(complaint, "marked_false", note, actor=user.mobile_number if user else "admin")
     complaint.save()
 
@@ -1209,6 +1444,49 @@ def create_audit(actor, action, target_type="", target_id="", metadata=None):
         metadata=metadata or {},
     ).save()
 
+def _flatten_geojson_coordinates(coords):
+    if not coords:
+        return []
+    first = coords[0]
+    if isinstance(first, (list, tuple)) and len(first) >= 2 and isinstance(first[0], (int, float)):
+        return coords
+    flattened = []
+    for item in coords:
+        flattened.extend(_flatten_geojson_coordinates(item))
+    return flattened
+
+
+def geoapify_route(from_lat, from_lon, to_lat, to_lon, mode="drive"):
+    if not settings.GEOAPIFY_API_KEY or settings.GEOAPIFY_API_KEY == "your_geoapify_api_key_here":
+        raise ValueError("Geoapify API key is not configured.")
+    response = requests.get(
+        "https://api.geoapify.com/v1/routing",
+        params={
+            "waypoints": f"{from_lat},{from_lon}|{to_lat},{to_lon}",
+            "mode": mode or "drive",
+            "type": "short",
+            "apiKey": settings.GEOAPIFY_API_KEY,
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    data = response.json()
+    features = data.get("features") or []
+    if not features:
+        raise ValueError("No route found between worker and complaint location.")
+    feature = features[0]
+    properties = feature.get("properties") or {}
+    raw_coordinates = ((feature.get("geometry") or {}).get("coordinates")) or []
+    coordinates = []
+    for lon_lat in _flatten_geojson_coordinates(raw_coordinates):
+        if len(lon_lat) >= 2:
+            coordinates.append({"latitude": lon_lat[1], "longitude": lon_lat[0]})
+    return {
+        "mode": mode or "drive",
+        "distance_meters": properties.get("distance"),
+        "duration_seconds": properties.get("time"),
+        "coordinates": coordinates,
+    }
 
 def geoapify_reverse(lat, lon):
     if not settings.GEOAPIFY_API_KEY or settings.GEOAPIFY_API_KEY == "your_geoapify_api_key_here":
@@ -1232,3 +1510,4 @@ def geoapify_search(query):
     )
     response.raise_for_status()
     return response.json()
+

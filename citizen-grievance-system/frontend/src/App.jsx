@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
+import LoginPage, { WorkerSignupPage } from "./pages/LoginPage";
 import {
   ComplaintTrackingPage,
   MyGrievancesPage,
@@ -11,6 +11,8 @@ import {
   ActiveWorkPage,
   AdminComplaintDetailPage,
   AdminDashboardPage,
+  AdminResolvedPage,
+  AdminReviewRequestsPage,
   AIRejectionsPage,
   AnalyticsPage,
   ComplaintsQueuePage,
@@ -27,6 +29,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage portal="citizen" />} />
+      <Route path="/worker/login" element={<LoginPage portal="worker" />} />
+      <Route path="/worker/signup" element={<WorkerSignupPage />} />
       <Route path="/admin/login" element={<LoginPage portal="admin" />} />
       <Route path="/my-grievances" element={<RouteGuard allowedRoles={["citizen"]}><MyGrievancesPage /></RouteGuard>} />
       <Route path="/submit" element={<RouteGuard allowedRoles={["citizen"]}><SubmitComplaintPage /></RouteGuard>} />
@@ -37,6 +41,8 @@ export default function App() {
       <Route path="/admin" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><AdminDashboardPage /></RouteGuard>} />
       <Route path="/admin/complaints" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><ComplaintsQueuePage /></RouteGuard>} />
       <Route path="/admin/rejected" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><AIRejectionsPage /></RouteGuard>} />
+      <Route path="/admin/review-requests" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><AdminReviewRequestsPage /></RouteGuard>} />
+      <Route path="/admin/resolved" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><AdminResolvedPage /></RouteGuard>} />
       <Route path="/admin/complaints/:id" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><AdminComplaintDetailPage /></RouteGuard>} />
       <Route path="/admin/manual-review" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><ManualReviewPage /></RouteGuard>} />
       <Route path="/admin/active-work" element={<RouteGuard allowedRoles={["admin", "super_admin"]}><ActiveWorkPage /></RouteGuard>} />
@@ -54,3 +60,8 @@ export default function App() {
     </Routes>
   );
 }
+
+
+
+
+

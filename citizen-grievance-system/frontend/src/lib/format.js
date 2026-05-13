@@ -38,8 +38,18 @@ export function priorityRank(priority = "") {
   }[priority] ?? 4;
 }
 
+export function statusSortRank(status = "") {
+  const normalized = String(status).toLowerCase();
+  if (normalized === "rejected" || normalized.includes("rejected")) return 1;
+  if (normalized.includes("false_review") || normalized.includes("false review") || normalized.includes("resolution_review") || normalized.includes("resolution review")) return 2;
+  if (normalized.includes("resolved") || normalized.includes("closed")) return 3;
+  return 0;
+}
+
 export function sortByPriority(items = []) {
   return [...items].sort((first, second) => {
+    const statusDiff = statusSortRank(first.rawStatus || first.status) - statusSortRank(second.rawStatus || second.status);
+    if (statusDiff !== 0) return statusDiff;
     const priorityDiff = priorityRank(first.priority) - priorityRank(second.priority);
     if (priorityDiff !== 0) return priorityDiff;
     const proofDiff = Number(Boolean(second.hasCitizenProof)) - Number(Boolean(first.hasCitizenProof));
@@ -47,3 +57,4 @@ export function sortByPriority(items = []) {
     return new Date(second.submittedAtRaw || second.submittedAt || 0) - new Date(first.submittedAtRaw || first.submittedAt || 0);
   });
 }
+

@@ -86,6 +86,9 @@ class Officer(TimestampedDocument):
     email = EmailField()
     department = ReferenceField(Department)
     zones = ListField(StringField())
+    latitude = FloatField()
+    longitude = FloatField()
+    last_location_at = DateTimeField()
     senior_officer_id = StringField(default="")
     is_active = BooleanField(default=True)
 

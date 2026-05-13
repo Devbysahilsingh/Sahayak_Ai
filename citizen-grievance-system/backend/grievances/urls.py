@@ -7,6 +7,7 @@ urlpatterns = [
     path("health/", views.HealthView.as_view(), name="health"),
     path("auth/send-otp/", views.SendOtpView.as_view(), name="send-otp"),
     path("auth/verify-otp/", views.VerifyOtpView.as_view(), name="verify-otp"),
+    path("auth/worker-signup/", views.WorkerSignupView.as_view(), name="worker-signup"),
     path("auth/me/", views.MeView.as_view(), name="me"),
     path("voice/transcribe/", views.VoiceTranscriptionView.as_view(), name="voice-transcribe"),
     path("complaints/", views.ComplaintListCreateView.as_view(), name="complaints"),
@@ -42,6 +43,18 @@ urlpatterns = [
         views.ComplaintFeedbackView.as_view(),
         name="complaint-feedback",
     ),
+    path("worker/complaints/", views.WorkerComplaintsView.as_view(), name="worker-complaints"),
+    path("worker/location/", views.WorkerLocationView.as_view(), name="worker-location"),
+    path(
+        "worker/complaints/<str:complaint_id>/<str:action>/",
+        views.WorkerComplaintActionView.as_view(),
+        name="worker-complaint-action",
+    ),
+    path(
+        "admin/complaints/<str:complaint_id>/<str:action>/",
+        views.AdminComplaintApprovalView.as_view(),
+        name="admin-complaint-approval",
+    ),
     path("active-work/", views.ActiveWorkListCreateView.as_view(), name="active-work"),
     path("active-work/<str:work_id>/", views.ActiveWorkDetailView.as_view(), name="active-work-detail"),
     path("departments/", views.DepartmentListCreateView.as_view(), name="departments"),
@@ -56,6 +69,10 @@ urlpatterns = [
         views.ClassificationFeedbackView.as_view(),
         name="classification-feedback",
     ),
+    path("geo/route/", views.GeoRouteView.as_view(), name="geo-route"),
     path("geo/reverse/", views.GeoReverseView.as_view(), name="geo-reverse"),
     path("geo/search/", views.GeoSearchView.as_view(), name="geo-search"),
 ]
+
+
+

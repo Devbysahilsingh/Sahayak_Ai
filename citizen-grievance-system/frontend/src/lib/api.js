@@ -9,14 +9,27 @@ const SESSION_KEYS = {
     token: "sahayak_admin_token",
     user: "sahayak_admin_user",
   },
+  worker: {
+    token: "sahayak_worker_token",
+    user: "sahayak_worker_user",
+  },
 };
 
 function getSessionScope(scope) {
   if (scope) return scope;
-  if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/officer"))) {
-    return "admin";
+  if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+    if (pathname.startsWith("/officer") || pathname.startsWith("/worker")) return "worker";
+    if (pathname.startsWith("/admin")) return "admin";
   }
   return "citizen";
+}
+
+function getRequestScope(path, explicitScope) {
+  if (explicitScope) return explicitScope;
+  if (path.startsWith("/worker/") || path.startsWith("/auth/worker-signup/")) return "worker";
+  if (path.startsWith("/admin/") || path.startsWith("/dashboard/") || path.startsWith("/users/") || path.startsWith("/active-work/") || path.startsWith("/officers/") || path.startsWith("/departments/")) return "admin";
+  return getSessionScope();
 }
 
 export function resolveMediaUrl(url) {
@@ -59,18 +72,19 @@ export function clearSession(scope) {
 }
 
 async function request(path, options = {}) {
-  const isFormData = options.body instanceof FormData;
+  const { scope, ...fetchOptions } = options;
+  const isFormData = fetchOptions.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    ...(options.headers || {}),
+    ...(fetchOptions.headers || {}),
   };
-  const token = getToken();
+  const token = getToken(getRequestScope(path, scope));
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   });
   const data = await response.json().catch(() => ({}));
@@ -91,6 +105,11 @@ export const api = {
     request("/auth/verify-otp/", {
       method: "POST",
       body: JSON.stringify({ mobile_number: mobileNumber, otp }),
+    }),
+  signupWorker: (payload) =>
+    request("/auth/worker-signup/", {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
   createComplaint: (payload) => {
     if (payload.attachments?.length) {
@@ -116,7 +135,7 @@ export const api = {
     const formData = new FormData();
     formData.append("audio", audioBlob, filename);
     const headers = {};
-    const token = getToken();
+    const token = getToken("citizen");
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -159,10 +178,55 @@ export const api = {
       body: formData,
     });
   },
+  approveFalseReport: (id, note = "") =>
+    request(`/admin/complaints/${id}/approve-false/`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  approveResolution: (id, note = "") =>
+    request(`/admin/complaints/${id}/approve-resolution/`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
   submitComplaintFeedback: (id, payload) =>
     request(`/complaints/${id}/feedback/`, {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+  listWorkerComplaints: (view = "") =>
+    request(`/worker/complaints/${view ? `?view=${encodeURIComponent(view)}` : ""}`),
+  updateWorkerLocation: (payload) =>
+    request("/worker/location/", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  startWorkerComplaint: (id) =>
+    request(`/worker/complaints/${id}/start/`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+  submitWorkerFalseReport: (id, note, evidenceFile) => {
+    const formData = new FormData();
+    formData.append("note", note);
+    if (evidenceFile) formData.append("evidence", evidenceFile);
+    return request(`/worker/complaints/${id}/false-report/`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  resolveWorkerComplaint: (id, note, evidenceFile) => {
+    const formData = new FormData();
+    formData.append("note", note);
+    if (evidenceFile) formData.append("evidence", evidenceFile);
+    return request(`/worker/complaints/${id}/resolve/`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  requestWorkerMoreTime: (id, note) =>
+    request(`/worker/complaints/${id}/more-time/`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
     }),
   processOverdueComplaints: () =>
     request("/complaints/process-overdue/", {
@@ -189,6 +253,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  geoRoute: ({ fromLat, fromLon, toLat, toLon }) =>
+    request(`/geo/route/?from_lat=${fromLat}&from_lon=${fromLon}&to_lat=${toLat}&to_lon=${toLon}&mode=drive`, { scope: "worker" }),
   geoSearch: (query) => request(`/geo/search/?q=${encodeURIComponent(query)}`),
   geoReverse: (lat, lon) => request(`/geo/reverse/?lat=${lat}&lon=${lon}`),
 };
+
+
+
+
+
+

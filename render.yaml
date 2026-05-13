@@ -1,0 +1,74 @@
+services:
+  - type: web
+    name: sahayak-ai-backend
+    env: python
+    rootDir: citizen-grievance-system/backend
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: sahayak-ai-backend.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://sahayak-ai-frontend.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://sahayak-ai-frontend.onrender.com
+      - key: SESSION_COOKIE_SECURE
+        value: "True"
+      - key: CSRF_COOKIE_SECURE
+        value: "True"
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: sahayak_ai
+      - key: AI_ENGINE_URL
+        value: https://sahayak-ai-engine.onrender.com
+      - key: GEOAPIFY_API_KEY
+        sync: false
+      - key: OTP_DEV_MODE
+        value: "True"
+      - key: ASYNC_COMPLAINT_PROCESSING
+        value: "False"
+      - key: VOICE_TRANSCRIPTION_ENABLED
+        value: "True"
+    disk:
+      name: backend-media
+      mountPath: /opt/render/project/src/citizen-grievance-system/backend/media
+      sizeGB: 1
+
+  - type: web
+    name: sahayak-ai-engine
+    env: python
+    rootDir: citizen-grievance-system/ai_engine
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: WHISPER_MODEL_SIZE
+        value: small
+      - key: ENABLE_LOCAL_TRANSLATION
+        value: "true"
+      - key: TRANSLATION_MODEL_NAME
+        value: facebook/nllb-200-distilled-600M
+
+  - type: static
+    name: sahayak-ai-frontend
+    rootDir: citizen-grievance-system/frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://sahayak-ai-backend.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
