@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GovResolve AI | Manual Review Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@450&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#af895a",
+                    "on-secondary": "#ffffff",
+                    "surface-dim": "#d1dbe8",
+                    "primary-fixed-dim": "#b0c9ea",
+                    "secondary-fixed-dim": "#75d6d6",
+                    "on-tertiary-fixed-variant": "#5f4119",
+                    "on-primary-fixed": "#001d36",
+                    "error": "#ba1a1a",
+                    "on-background": "#121d26",
+                    "surface-container-highest": "#d9e3f1",
+                    "surface-container-low": "#edf4ff",
+                    "on-surface": "#121d26",
+                    "surface-variant": "#d9e3f1",
+                    "on-secondary-container": "#007070",
+                    "outline": "#74777e",
+                    "outline-variant": "#c3c6ce",
+                    "secondary-container": "#91f3f2",
+                    "on-primary": "#ffffff",
+                    "on-surface-variant": "#43474d",
+                    "on-tertiary-fixed": "#2a1700",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#3c2300",
+                    "surface-tint": "#48607d",
+                    "tertiary-fixed": "#ffddb8",
+                    "primary": "#00152a",
+                    "surface-bright": "#f7f9ff",
+                    "tertiary": "#201100",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed": "#91f3f2",
+                    "on-secondary-fixed": "#002020",
+                    "secondary": "#006a6a",
+                    "surface-container": "#e4effd",
+                    "surface": "#f7f9ff",
+                    "primary-fixed": "#d1e4ff",
+                    "inverse-primary": "#b0c9ea",
+                    "background": "#f7f9ff",
+                    "on-primary-fixed-variant": "#304864",
+                    "tertiary-fixed-dim": "#ebbf8c",
+                    "on-primary-container": "#7992b1",
+                    "inverse-on-surface": "#e8f2ff",
+                    "inverse-surface": "#27313c",
+                    "surface-container-high": "#dfe9f7",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#0f2a44",
+                    "on-secondary-fixed-variant": "#004f50",
+                    "on-error-container": "#93000a",
+                    "on-error": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "gutter": "24px",
+                    "margin-desktop": "32px",
+                    "unit": "4px",
+                    "sidebar-width": "260px",
+                    "container-max-width": "1280px"
+            },
+            "fontFamily": {
+                    "data-mono": ["JetBrains Mono"],
+                    "body-sm": ["Inter"],
+                    "h1": ["Public Sans"],
+                    "display": ["Public Sans"],
+                    "body-lg": ["Inter"],
+                    "h3": ["Public Sans"],
+                    "h2": ["Public Sans"],
+                    "label-uppercase": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "data-mono": ["13px", {"lineHeight": "18px", "fontWeight": "450"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h3": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-uppercase": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F5F7FA;
+            color: #121d26;
+        }
+        .sidebar-active {
+            background-color: #006a6a;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="flex overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="flex flex-col w-sidebar-width h-screen py-gutter bg-primary fixed left-0 top-0">
+<div class="px-6 mb-8">
+<h1 class="font-h3 text-h3 text-on-primary font-bold">Admin Portal</h1>
+<p class="text-on-primary-fixed-variant opacity-70 text-xs">Grievance Division</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active State: Complaints Queue (Manual Review Context) -->
+<a class="flex items-center px-4 py-2 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all font-body-md text-body-md rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-4 py-2 bg-secondary text-on-secondary rounded-lg mx-2 my-1 font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined mr-3">list_alt</span>
+                Complaints Queue
+            </a>
+<a class="flex items-center px-4 py-2 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all font-body-md text-body-md rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">assignment</span>
+                Work Management
+            </a>
+<a class="flex items-center px-4 py-2 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all font-body-md text-body-md rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">priority_high</span>
+                Escalations
+            </a>
+<a class="flex items-center px-4 py-2 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all font-body-md text-body-md rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">group</span>
+                User Management
+            </a>
+<a class="flex items-center px-4 py-2 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all font-body-md text-body-md rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">monitoring</span>
+                Analytics
+            </a>
+<a class="flex items-center px-4 py-2 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all font-body-md text-body-md rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+                Settings
+            </a>
+</nav>
+<div class="px-6 pt-6 border-t border-on-primary-fixed-variant/20">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container text-sm">account_circle</span>
+</div>
+<div>
+<p class="text-on-primary text-sm font-bold">Admin User</p>
+<p class="text-on-primary-fixed-variant text-xs opacity-70">Review Officer</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-screen overflow-hidden">
+<!-- Top Bar -->
+<header class="h-16 flex justify-between items-center px-margin-desktop bg-surface border-b border-outline-variant">
+<h2 class="font-h2 text-h2 text-primary font-bold">Manual Review Page</h2>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline text-sm">search</span>
+</span>
+<input class="bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-1.5 text-body-md focus:ring-2 focus:ring-primary focus:outline-none w-64" placeholder="Search complaints..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+</div>
+</header>
+<!-- Dynamic Content Layout -->
+<div class="flex-1 flex overflow-hidden p-6 gap-6">
+<!-- Left: Queue of low-confidence complaints -->
+<section class="flex-1 flex flex-col bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="p-4 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+<h3 class="font-h3 text-h3 text-primary">Low-Confidence Queue</h3>
+<div class="flex gap-2">
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">34 Pending</span>
+</div>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-low z-10">
+<tr class="text-label-uppercase font-label-uppercase text-on-surface-variant border-b border-outline-variant">
+<th class="px-4 py-3">ID</th>
+<th class="px-4 py-3">Complaint Preview</th>
+<th class="px-4 py-3">AI Category</th>
+<th class="px-4 py-3">Confidence</th>
+<th class="px-4 py-3">Lang</th>
+<th class="px-4 py-3">Priority</th>
+<th class="px-4 py-3">Location</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Selected Row -->
+<tr class="bg-secondary-container/20 border-l-4 border-secondary hover:bg-secondary-container/30 transition-colors cursor-pointer">
+<td class="px-4 py-4 font-data-mono text-data-mono">#GR-8821</td>
+<td class="px-4 py-4 text-body-sm text-on-surface line-clamp-1 max-w-[200px]">Street light broken near the central park entrance...</td>
+<td class="px-4 py-4 text-body-sm">Public Utilities</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-outline-variant rounded-full overflow-hidden">
+<div class="w-1/3 h-full bg-error"></div>
+</div>
+<span class="text-data-mono text-error font-bold text-xs">32%</span>
+</div>
+</td>
+<td class="px-4 py-4 text-body-sm">EN</td>
+<td class="px-4 py-4">
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Urgent</span>
+</td>
+<td class="px-4 py-4 text-body-sm">Downtown</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-4 py-4 font-data-mono text-data-mono">#GR-8819</td>
+<td class="px-4 py-4 text-body-sm text-on-surface line-clamp-1 max-w-[200px]">Garbage collection has been missed twice this week...</td>
+<td class="px-4 py-4 text-body-sm">Sanitation</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-outline-variant rounded-full overflow-hidden">
+<div class="w-2/5 h-full bg-on-tertiary-container"></div>
+</div>
+<span class="text-data-mono text-on-tertiary-container font-bold text-xs">41%</span>
+</div>
+</td>
+<td class="px-4 py-4 text-body-sm">EN</td>
+<td class="px-4 py-4">
+<span class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
+</td>
+<td class="px-4 py-4 text-body-sm">South Hill</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-4 py-4 font-data-mono text-data-mono">#GR-8815</td>
+<td class="px-4 py-4 text-body-sm text-on-surface line-clamp-1 max-w-[200px]">Pothole on 5th avenue causing traffic delays...</td>
+<td class="px-4 py-4 text-body-sm">Infrastructure</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-outline-variant rounded-full overflow-hidden">
+<div class="w-1/4 h-full bg-error"></div>
+</div>
+<span class="text-data-mono text-error font-bold text-xs">28%</span>
+</div>
+</td>
+<td class="px-4 py-4 text-body-sm">EN</td>
+<td class="px-4 py-4">
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Urgent</span>
+</td>
+<td class="px-4 py-4 text-body-sm">East Side</td>
+</tr>
+<!-- More rows placeholder -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-4 py-4 font-data-mono text-data-mono">#GR-8812</td>
+<td class="px-4 py-4 text-body-sm text-on-surface line-clamp-1 max-w-[200px]">Illegal parking in the residential zone after 6 PM...</td>
+<td class="px-4 py-4 text-body-sm">Parking</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-outline-variant rounded-full overflow-hidden">
+<div class="w-3/5 h-full bg-on-secondary-container"></div>
+</div>
+<span class="text-data-mono text-on-secondary-container font-bold text-xs">55%</span>
+</div>
+</td>
+<td class="px-4 py-4 text-body-sm">ES</td>
+<td class="px-4 py-4">
+<span class="bg-secondary-container text-on-secondary-container text-[10px] font-bold px-2 py-0.5 rounded uppercase">Low</span>
+</td>
+<td class="px-4 py-4 text-body-sm">Riverfront</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Right: Review Panel -->
+<section class="w-1/3 flex flex-col bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="p-4 border-b border-outline-variant bg-primary-container text-on-primary">
+<h3 class="font-h3 text-h3 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">rate_review</span>
+                        Review Panel
+                    </h3>
+<p class="text-[11px] opacity-70 font-data-mono">Processing: #GR-8821</p>
+</div>
+<div class="flex-1 overflow-auto p-6 space-y-6">
+<!-- Full Text -->
+<div>
+<label class="block text-label-uppercase font-label-uppercase text-on-surface-variant mb-2">Original Complaint Text</label>
+<div class="p-4 bg-surface-container-low border border-outline-variant rounded-lg text-body-md text-on-surface leading-relaxed italic">
+                            "The street light outside the central park entrance has been flickering for three days and finally went out last night. It's very dark and feels unsafe for pedestrians returning from work. Please fix this as soon as possible."
+                        </div>
+</div>
+<!-- AI Suggestion Details -->
+<div class="grid grid-cols-2 gap-4 p-4 rounded-lg bg-surface border border-outline-variant">
+<div>
+<p class="text-[10px] font-bold uppercase text-outline mb-1">AI Classification</p>
+<p class="font-h3 text-primary">Public Utilities</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase text-outline mb-1">Confidence Score</p>
+<p class="font-h3 text-error">32.4%</p>
+</div>
+<div class="col-span-2 pt-2 border-t border-outline-variant mt-2">
+<p class="text-xs text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">info</span>
+                                Reason: Mentions "Safety" and "Light", but context is ambiguous between Infrastructure and Security.
+                            </p>
+</div>
+</div>
+<!-- Actions Form -->
+<div class="space-y-4 pt-4 border-t border-outline-variant">
+<div>
+<label class="block text-label-uppercase font-label-uppercase text-on-surface-variant mb-2">Correct Department</label>
+<select class="w-full bg-white border border-outline-variant rounded-lg px-4 py-2.5 text-body-md focus:ring-2 focus:ring-primary focus:outline-none appearance-none cursor-pointer">
+<option>Electrical Maintenance</option>
+<option>Public Utilities (Confirmed)</option>
+<option>Public Works</option>
+<option>Police Department</option>
+<option>Parks &amp; Recreation</option>
+</select>
+</div>
+<div>
+<label class="block text-label-uppercase font-label-uppercase text-on-surface-variant mb-2">Adjust Priority</label>
+<select class="w-full bg-white border border-outline-variant rounded-lg px-4 py-2.5 text-body-md focus:ring-2 focus:ring-primary focus:outline-none appearance-none cursor-pointer">
+<option>Urgent</option>
+<option>Medium</option>
+<option>Low</option>
+</select>
+</div>
+<div class="flex items-start gap-3 p-3 bg-surface rounded-lg border border-outline-variant">
+<input checked="" class="mt-1 w-4 h-4 rounded text-primary border-outline-variant focus:ring-primary" id="save-feedback" type="checkbox"/>
+<div>
+<label class="block font-bold text-body-sm text-on-surface" for="save-feedback">Save for model feedback</label>
+<p class="text-[11px] text-on-surface-variant leading-tight mt-0.5">This correction will be used for future model improvement.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 border-t border-outline-variant bg-surface-container-low flex flex-col gap-3">
+<button class="w-full bg-primary text-on-primary font-bold py-3 px-6 rounded transition-all hover:opacity-90 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">send</span>
+                        Resolve &amp; Reassign
+                    </button>
+<button class="w-full bg-white border border-outline-variant text-on-surface font-bold py-3 px-6 rounded transition-all hover:bg-surface-container-high flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">skip_next</span>
+                        Skip for Now
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Notification (Simulated State) -->
+<div class="fixed bottom-6 right-6 z-50">
+<div class="bg-inverse-surface text-inverse-on-surface px-6 py-4 rounded-xl shadow-lg flex items-center gap-4 max-w-md border border-outline">
+<div class="w-8 h-8 bg-on-secondary-container rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div>
+<p class="text-body-sm font-bold">Feedback Loop Active</p>
+<p class="text-[11px] opacity-80">Manual corrections are currently training the GovResolve-v2 engine.</p>
+</div>
+<button class="ml-auto text-inverse-on-surface/50 hover:text-white">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</body></html>

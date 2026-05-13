@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GovResolve AI - Complaint Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Public+Sans:wght@600;700&amp;family=JetBrains+Mono:wght@450&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#af895a",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d1dbe8",
+                        "primary-fixed-dim": "#b0c9ea",
+                        "secondary-fixed-dim": "#75d6d6",
+                        "on-tertiary-fixed-variant": "#5f4119",
+                        "on-primary-fixed": "#001d36",
+                        "error": "#ba1a1a",
+                        "on-background": "#121d26",
+                        "surface-container-highest": "#d9e3f1",
+                        "surface-container-low": "#edf4ff",
+                        "on-surface": "#121d26",
+                        "surface-variant": "#d9e3f1",
+                        "on-secondary-container": "#007070",
+                        "outline": "#74777e",
+                        "outline-variant": "#c3c6ce",
+                        "secondary-container": "#91f3f2",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#43474d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#3c2300",
+                        "surface-tint": "#48607d",
+                        "tertiary-fixed": "#ffddb8",
+                        "primary": "#00152a",
+                        "surface-bright": "#f7f9ff",
+                        "tertiary": "#201100",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#91f3f2",
+                        "on-secondary-fixed": "#002020",
+                        "secondary": "#006a6a",
+                        "surface-container": "#e4effd",
+                        "surface": "#f7f9ff",
+                        "primary-fixed": "#d1e4ff",
+                        "inverse-primary": "#b0c9ea",
+                        "background": "#f7f9ff",
+                        "on-primary-fixed-variant": "#304864",
+                        "tertiary-fixed-dim": "#ebbf8c",
+                        "on-primary-container": "#7992b1",
+                        "inverse-on-surface": "#e8f2ff",
+                        "inverse-surface": "#27313c",
+                        "surface-container-high": "#dfe9f7",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#0f2a44",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "sidebar-width": "260px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "data-mono": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "h1": ["Public Sans"],
+                        "display": ["Public Sans"],
+                        "body-lg": ["Inter"],
+                        "h3": ["Public Sans"],
+                        "h2": ["Public Sans"],
+                        "label-uppercase": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-mono": ["13px", {"lineHeight": "18px", "fontWeight": "450"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h3": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-uppercase": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F5F7FA;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen text-on-surface font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-primary flex flex-col py-gutter z-30">
+<div class="px-6 mb-10">
+<h1 class="font-h3 text-h3 text-on-primary font-bold">Admin Portal</h1>
+<p class="text-on-primary-fixed-variant opacity-70 text-body-sm">Grievance Division</p>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary text-on-secondary rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="list_alt">list_alt</span>
+<span class="font-body-md">Complaints Queue</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-body-md">Work Management</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="priority_high">priority_high</span>
+<span class="font-body-md">Escalations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-body-md">User Management</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-6 pt-4 border-t border-on-primary-fixed-variant/20 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold">JD</div>
+<div class="overflow-hidden">
+<p class="font-body-sm text-on-primary truncate">Officer J. Doe</p>
+<p class="text-[11px] text-on-primary-fixed-variant opacity-60 truncate">District Division III</p>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-sidebar-width flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="h-16 flex justify-between items-center w-full px-margin-desktop bg-surface border-b border-outline-variant sticky top-0 z-20">
+<div class="flex items-center gap-4">
+<a class="text-on-surface-variant hover:text-primary flex items-center gap-1 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+<span class="font-label-uppercase text-label-uppercase">Back to Queue</span>
+</a>
+<div class="h-4 w-px bg-outline-variant"></div>
+<h2 class="font-h2 text-h2 text-primary">GR-2024-8842</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</div>
+<input class="bg-surface-container-low border-none rounded-lg py-2 pl-4 pr-10 text-body-sm focus:ring-2 focus:ring-primary w-64 transition-all" placeholder="Search case ID..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="p-margin-desktop flex gap-gutter max-w-container-max-width mx-auto w-full overflow-y-auto">
+<!-- Left Column: Case Details -->
+<div class="flex-1 space-y-gutter">
+<!-- Complaint Summary Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface flex justify-between items-center">
+<h3 class="font-h3 text-h3 text-primary">Case Summary</h3>
+<span class="bg-error-container text-on-error-container text-[11px] font-bold px-2 py-1 rounded-sm uppercase tracking-wider">Urgent Priority</span>
+</div>
+<div class="p-6">
+<div class="grid grid-cols-3 gap-6 mb-8">
+<div>
+<p class="text-label-uppercase font-label-uppercase text-on-surface-variant mb-1">Status</p>
+<div class="flex items-center gap-2 text-on-secondary-container">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-body-md font-semibold">In Progress</span>
+</div>
+</div>
+<div>
+<p class="text-label-uppercase font-label-uppercase text-on-surface-variant mb-1">SLA Deadline</p>
+<div class="flex items-center gap-2 text-error font-data-mono text-data-mono">
+<span class="material-symbols-outlined text-[18px]" data-icon="alarm">alarm</span>
+<span>04h 22m 15s</span>
+</div>
+</div>
+<div>
+<p class="text-label-uppercase font-label-uppercase text-on-surface-variant mb-1">Filed Date</p>
+<p class="font-body-md text-primary">Oct 24, 2023 · 14:32</p>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<h4 class="font-h3 text-h3 mb-2">Illegal Dumping Incident at Central Park Perimeter</h4>
+<p class="text-body-lg text-on-surface-variant leading-relaxed">
+                                    Multiple industrial waste containers have been left at the East entrance of Central Park. Resident reports suggest a commercial truck was seen late last night around 11:30 PM. The waste includes construction debris and potential hazardous materials (paint cans, chemical drums).
+                                </p>
+</div>
+<div class="bg-surface-container-low rounded-lg p-4 border-l-4 border-secondary flex gap-4">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<p class="text-body-sm italic">"The site is currently obstructing the pedestrian walkway. Emergency cleanup is requested to prevent environmental leakage into the park drainage system."</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Location & Evidence Grid -->
+<div class="grid grid-cols-2 gap-gutter">
+<!-- Map Preview -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden h-[300px] relative">
+<div class="absolute top-4 left-4 z-10 bg-surface-container-lowest/90 backdrop-blur p-2 rounded border border-outline-variant">
+<p class="text-label-uppercase font-label-uppercase text-on-surface-variant">Incident Location</p>
+<p class="text-body-md font-semibold">452 East Park Ave, Sector 4</p>
+</div>
+<img class="w-full h-full object-cover" data-alt="A detailed digital map interface showing a specific urban street corner near a green park area. The map is rendered in a professional, clean UI style with a central red location pin marking an incident spot. The color palette is muted with soft grays, greens for the park, and primary blue for road highlights, maintaining a high-contrast, institutional aesthetic." data-location="New York Central Park East Entrance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCF-Ognma5frULYDbPehSlVciNL-pcQJXI7scPFmYPQoi5kZTyZp7JvIRm3XqkyYBUzUMb59gSo-NKqc-zieKIQWPjDLDAyrSC2XPC1JLq_shDGXJbP7idRYBBsaQ5haWz2sMpLxrCZw3Ea3Uua8BqrtJhVO9-qHw4j8S1QZ1uhJS8ST7qz43D1wV8xaxpZPIC6qdbS1IHf-FlqXB7UWvAd2C45u8-UrUWWn4OMxLVejUQbhs-wf8lazt138S3pFdsHphoCvFmWAWjH"/>
+</div>
+<!-- Evidence Carousel/Grid -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface flex justify-between items-center">
+<h3 class="font-h3 text-h3 text-primary">Uploaded Proof</h3>
+<button class="text-secondary text-body-sm font-semibold hover:underline">View All (4)</button>
+</div>
+<div class="p-4 grid grid-cols-2 gap-3 flex-1 overflow-y-auto">
+<img class="w-full h-24 object-cover rounded border border-outline-variant" data-alt="A sharp, clear photograph showing several discarded blue industrial chemical drums and white paint buckets on a city sidewalk next to a park fence. The lighting is cold, suggesting an early morning overcast sky. The image is framed as evidence for a municipal report, focusing on the debris with high clarity and neutral, institutional color tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgrcjN52jMR42KkA1j06mem6ubDaeyyzbCPlgamEBnZzk_iF4h7C4VUNIbru5GyhwaWkht_w7YsrbYZPcAuwNE2ONkiRxOHai60c4Yibk4WiMWl0d9GygO46XsZ3TYYzUJiz_Q427hfjMoGU6_f9hn1UoH67ULNFlUjLc7eg3TDX74MmafrKJvqbDTZ7WjuJ1yIxn0MUoQ6gGeERUM_ZajrZ-cHSWjWj5C2RWkq1h4Qc02ZYg9vShT8zMfd1276RQxP2gktOH0o-5x"/>
+<img class="w-full h-24 object-cover rounded border border-outline-variant" data-alt="A focused close-up shot of a tire track on a muddy patch of grass next to a paved road. The photograph is taken from a low angle to highlight the depth of the tread mark. The style is clinical and documentary, used for forensic reporting in a clean, modern dashboard environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAO5QaH6JZ70utzTsY93yh2rdlFvHnI3poM2MW1I6volZbXoi8ncDq688okeS9n_B-k0KA37AZFJjABUNr5hH8yFDihKb5awJoIfOCfJnBBp99nxq5KLec1_2HKHv_jVoCMfqAg8s9a9jMoR0SksHlwQYwm2v3p73lJGL6qQAAW50rF7Kwgj-1jIM-mf7aoL60yxhTmC4_QHbJr9LTlc4q7RrL2HeL-csD70IgMjlE30GvnbgYT-4e0vhJ34qLeZxqvCh6lvnW5Ia5i"/>
+<div class="w-full h-24 bg-surface-container border border-dashed border-outline-variant rounded flex flex-col items-center justify-center text-on-surface-variant group cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="add_photo_alternate">add_photo_alternate</span>
+<span class="text-[10px] uppercase font-bold mt-1">Upload New</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Officer Notes / Timeline -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface">
+<h3 class="font-h3 text-h3 text-primary">Case Timeline &amp; Notes</h3>
+</div>
+<div class="p-6 space-y-6">
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[18px]" data-icon="person_search">person_search</span>
+</div>
+<div class="w-px h-full bg-outline-variant mt-2"></div>
+</div>
+<div class="pb-4">
+<div class="flex items-baseline gap-2">
+<span class="font-semibold text-primary">Officer J. Doe</span>
+<span class="text-body-sm text-on-surface-variant">added a note · 2h ago</span>
+</div>
+<p class="text-body-md mt-1 text-on-surface">Arrived at scene. Confirmed industrial waste. Coordinating with Environmental Waste Management team for specialized pickup. No witnesses present during site inspection.</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex flex-col items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit_note">edit_note</span>
+</div>
+<div class="w-px h-full bg-outline-variant mt-2"></div>
+</div>
+<div class="pb-4">
+<div class="flex items-baseline gap-2">
+<span class="font-semibold text-primary">System Auto-Update</span>
+<span class="text-body-sm text-on-surface-variant">status change · 4h ago</span>
+</div>
+<p class="text-body-md mt-1 text-on-surface">Status changed from <strong>Assigned</strong> to <strong>In Progress</strong>.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Actions & Controls -->
+<div class="w-80 space-y-gutter">
+<!-- Status Update Form -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-md overflow-hidden">
+<div class="px-5 py-4 border-b border-outline-variant bg-primary-container text-on-primary-container">
+<h3 class="font-h3 text-h3 flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+                            Quick Actions
+                        </h3>
+</div>
+<div class="p-5 space-y-4">
+<div class="space-y-2">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Update Status</label>
+<select class="w-full bg-surface border-outline-variant rounded focus:ring-primary focus:border-primary text-body-sm">
+<option>In Progress</option>
+<option>Assigned</option>
+<option>Scheduled</option>
+<option>Resolved</option>
+<option>Needs Escalation</option>
+</select>
+</div>
+<div class="pt-2">
+<button class="w-full bg-primary text-on-primary py-2.5 rounded font-semibold text-body-md hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="save">save</span>
+                                Update Case
+                            </button>
+</div>
+</div>
+</div>
+<!-- Secondary Actions -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 space-y-3">
+<button class="w-full text-left px-4 py-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary" data-icon="add_comment">add_comment</span>
+<span class="font-body-md">Add Note</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="w-full text-left px-4 py-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary" data-icon="upload_file">upload_file</span>
+<span class="font-body-md">Upload Proof</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="w-full text-left px-4 py-3 border border-outline-variant rounded hover:bg-surface-container-low transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-error" data-icon="emergency_home">emergency_home</span>
+<span class="font-body-md">Request Escalation</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="chevron_right">chevron_right</span>
+</button>
+<button class="w-full text-left px-4 py-3 border border-outline-variant rounded hover:bg-error-container/20 transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-error" data-icon="block">block</span>
+<span class="font-body-md">Mark as False</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Citizen Information -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+<div class="px-5 py-3 border-b border-outline-variant bg-surface">
+<p class="text-label-uppercase font-label-uppercase text-on-surface-variant">Citizen Contact</p>
+</div>
+<div class="p-5">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container text-lg font-bold">SM</div>
+<div>
+<p class="font-semibold text-primary">Sarah Miller</p>
+<p class="text-body-sm text-on-surface-variant">Verified Citizen</p>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-body-sm">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="mail">mail</span>
+<span>s.miller@email.com</span>
+</div>
+<div class="flex items-center gap-2 text-body-sm">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="call">call</span>
+<span>+1 (555) 012-3456</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant">
+<div class="flex justify-between items-center text-[11px] text-on-surface-variant font-bold uppercase tracking-wider">
+<span>Total Reports</span>
+<span>12 Cases</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-high rounded-lg p-4 border-l-4 border-primary">
+<p class="text-[11px] font-bold text-primary uppercase mb-1">Administrative Note</p>
+<p class="text-body-sm text-on-surface-variant leading-tight">Officers are prohibited from blocking users. All grievance resolutions must follow the standard escalation protocol before dismissal.</p>
+</div>
+</div>
+</div>
+</main>
+</body></html>

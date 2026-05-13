@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Complaints Queue - GovResolve AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@450&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#af895a",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d1dbe8",
+                        "primary-fixed-dim": "#b0c9ea",
+                        "secondary-fixed-dim": "#75d6d6",
+                        "on-tertiary-fixed-variant": "#5f4119",
+                        "on-primary-fixed": "#001d36",
+                        "error": "#ba1a1a",
+                        "on-background": "#121d26",
+                        "surface-container-highest": "#d9e3f1",
+                        "surface-container-low": "#edf4ff",
+                        "on-surface": "#121d26",
+                        "surface-variant": "#d9e3f1",
+                        "on-secondary-container": "#007070",
+                        "outline": "#74777e",
+                        "outline-variant": "#c3c6ce",
+                        "secondary-container": "#91f3f2",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#43474d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#3c2300",
+                        "surface-tint": "#48607d",
+                        "tertiary-fixed": "#ffddb8",
+                        "primary": "#00152a",
+                        "surface-bright": "#f7f9ff",
+                        "tertiary": "#201100",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#91f3f2",
+                        "on-secondary-fixed": "#002020",
+                        "secondary": "#006a6a",
+                        "surface-container": "#e4effd",
+                        "surface": "#f7f9ff",
+                        "primary-fixed": "#d1e4ff",
+                        "inverse-primary": "#b0c9ea",
+                        "background": "#f7f9ff",
+                        "on-primary-fixed-variant": "#304864",
+                        "tertiary-fixed-dim": "#ebbf8c",
+                        "on-primary-container": "#7992b1",
+                        "inverse-on-surface": "#e8f2ff",
+                        "inverse-surface": "#27313c",
+                        "surface-container-high": "#dfe9f7",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#0f2a44",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "sidebar-width": "260px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "data-mono": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "h1": ["Public Sans"],
+                        "display": ["Public Sans"],
+                        "body-lg": ["Inter"],
+                        "h3": ["Public Sans"],
+                        "h2": ["Public Sans"],
+                        "label-uppercase": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-mono": ["13px", {"lineHeight": "18px", "fontWeight": "450"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h3": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-uppercase": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body { background-color: #F5F7FA; }
+        .sidebar-active { background-color: #006a6a; color: #ffffff; }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-primary dark:bg-primary-container flex flex-col py-gutter z-30">
+<div class="px-6 mb-8">
+<h1 class="font-h3 text-h3 text-on-primary font-bold">Admin Portal</h1>
+<p class="text-on-primary-fixed-variant opacity-80 text-body-sm">Grievance Division</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-4 py-3 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 bg-secondary dark:bg-secondary-container text-on-secondary dark:text-on-secondary-container rounded-lg mx-2 my-1" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="list_alt">list_alt</span>
+<span class="font-body-md">Complaints Queue</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="assignment">assignment</span>
+<span class="font-body-md">Work Management</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="priority_high">priority_high</span>
+<span class="font-body-md">Escalations</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="group">group</span>
+<span class="font-body-md">User Management</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="monitoring">monitoring</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center px-4 py-3 mx-2 my-1 text-on-primary-fixed-variant opacity-80 hover:bg-on-primary-fixed-variant/20 transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</nav>
+<div class="px-6 pt-6 border-t border-on-primary-fixed-variant/20 flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="Government Crest" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIxOVDwL_YGBgOQE5PBWnZ5-b0VqZkkBHmvkO9JAy2jXCjVWZXeAbutpXy4h3LRsuBd61wtlgtY3ooHBvXf11c-lAVH0JlF37LXf6fCb9LhNUhiU7ffgcjhGIvvmTQkcm-fe72hujPgiyF3Zm1PDH4Z5zyNX9gYKMMD7X4QRlKPeDinWuwG_LPEG_HlKP_HGu_KgyEcTjBSE6Rd7fKcPdcRYduvNH1l7VBXOxzKFhjJOUFY-9QycUVuYDzjaVhUUsJaTNPmRm_zkQv"/>
+</div>
+<div>
+<p class="text-on-primary text-body-sm font-bold">Admin Officer</p>
+<p class="text-on-primary-fixed-variant opacity-60 text-[11px]">ID: 8829-X</p>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-[260px] min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline flex justify-between items-center w-full px-margin-desktop h-16 sticky top-0 z-20">
+<div class="flex items-center gap-4">
+<span class="font-display text-h2 font-bold text-primary dark:text-inverse-primary">GovResolve AI</span>
+<div class="h-6 w-[1px] bg-outline-variant"></div>
+<span class="font-h2 text-h2 text-primary dark:text-inverse-primary">Complaints Queue</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-1.5 text-body-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="Search records..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-primary dark:text-inverse-primary hover:bg-surface-container-low p-2 rounded-full transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-primary dark:text-inverse-primary hover:bg-surface-container-low p-2 rounded-full transition-colors" data-icon="help_outline">help_outline</button>
+<button class="material-symbols-outlined text-primary dark:text-inverse-primary hover:bg-surface-container-low p-2 rounded-full transition-colors" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<div class="p-gutter">
+<!-- Filter Bar -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-4 mb-6">
+<div class="flex flex-wrap items-end gap-4">
+<div class="flex flex-col gap-1.5 min-w-[140px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Status</label>
+<select class="bg-white border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-primary outline-none">
+<option>All Status</option>
+<option>Pending</option>
+<option>In Progress</option>
+<option>Resolved</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5 min-w-[140px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Dept</label>
+<select class="bg-white border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-primary outline-none">
+<option>All Depts</option>
+<option>Public Works</option>
+<option>Sanitation</option>
+<option>Electricity</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5 min-w-[120px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Priority</label>
+<select class="bg-white border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-primary outline-none">
+<option>All</option>
+<option>Urgent</option>
+<option>High</option>
+<option>Medium</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5 min-w-[120px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Ward</label>
+<select class="bg-white border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-primary outline-none">
+<option>All Wards</option>
+<option>Ward 12</option>
+<option>Ward 08</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5 min-w-[120px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Language</label>
+<select class="bg-white border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-primary outline-none">
+<option>All</option>
+<option>English</option>
+<option>Hindi</option>
+<option>Regional</option>
+</select>
+</div>
+<div class="flex flex-col gap-1.5 min-w-[140px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Date Range</label>
+<input class="bg-white border border-outline-variant rounded px-3 py-2 text-body-sm focus:border-primary outline-none" type="date"/>
+</div>
+<div class="flex flex-col gap-1.5 min-w-[140px]">
+<label class="text-label-uppercase font-label-uppercase text-on-surface-variant">Confidence</label>
+<div class="flex items-center gap-2 bg-white border border-outline-variant rounded px-3 py-2">
+<span class="text-body-sm text-on-surface-variant">80%+</span>
+<input class="w-full accent-primary" type="range"/>
+</div>
+</div>
+<button class="bg-primary text-white px-6 py-2 rounded font-body-md hover:opacity-90 transition-opacity ml-auto">Apply Filters</button>
+</div>
+</section>
+<!-- Data Table Section -->
+<div class="bg-white border border-outline-variant rounded-lg overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<h2 class="font-h3 text-h3">Active Complaints (1,248)</h2>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 border border-outline-variant px-3 py-1.5 rounded text-body-sm hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span> Export CSV
+                        </button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse text-left">
+<thead>
+<tr class="bg-surface-container-low">
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">ID</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Mobile</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Category</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Confidence</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Priority</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Location</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Assigned Dept</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Status</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">ETA</th>
+<th class="px-6 py-3 border-b border-outline-variant font-label-uppercase text-label-uppercase text-on-surface-variant">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-data-mono text-data-mono">#GR-9921</td>
+<td class="px-6 py-4 text-body-sm">+91 98XXX X4410</td>
+<td class="px-6 py-4 text-body-sm">Pothole Repair</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-12 bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 94%"></div>
+</div>
+<span class="text-data-mono text-[11px] font-bold text-secondary">94%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-error/10 text-error">Urgent</span>
+</td>
+<td class="px-6 py-4 text-body-sm">Ward 12, Sector C</td>
+<td class="px-6 py-4 text-body-sm">Public Works</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-body-sm">
+<span class="w-2 h-2 rounded-full bg-yellow-500"></span> Pending
+                                    </span>
+</td>
+<td class="px-6 py-4 text-body-sm">24h</td>
+<td class="px-6 py-4">
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="View Details">visibility</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Reassign">move_item</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Manual Review">rate_review</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Escalate">priority_high</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Mark False">block</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-data-mono text-data-mono">#GR-9922</td>
+<td class="px-6 py-4 text-body-sm">+91 91XXX X8821</td>
+<td class="px-6 py-4 text-body-sm">Street Light Out</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-12 bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 82%"></div>
+</div>
+<span class="text-data-mono text-[11px] font-bold text-secondary">82%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-on-secondary-container/10 text-on-secondary-container">Medium</span>
+</td>
+<td class="px-6 py-4 text-body-sm">Ward 08, Main Rd</td>
+<td class="px-6 py-4 text-body-sm">Electricity</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-body-sm">
+<span class="w-2 h-2 rounded-full bg-blue-500"></span> In Progress
+                                    </span>
+</td>
+<td class="px-6 py-4 text-body-sm">48h</td>
+<td class="px-6 py-4">
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="View Details">visibility</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Reassign">move_item</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Manual Review">rate_review</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Escalate">priority_high</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Mark False">block</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-data-mono text-data-mono">#GR-9925</td>
+<td class="px-6 py-4 text-body-sm">+91 70XXX X1109</td>
+<td class="px-6 py-4 text-body-sm">Garbage Collection</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-12 bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 45%"></div>
+</div>
+<span class="text-data-mono text-[11px] font-bold text-error">45%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-error/10 text-error">High</span>
+</td>
+<td class="px-6 py-4 text-body-sm">Ward 05, Park Ave</td>
+<td class="px-6 py-4 text-body-sm">Sanitation</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-body-sm">
+<span class="w-2 h-2 rounded-full bg-red-500"></span> Manual Review
+                                    </span>
+</td>
+<td class="px-6 py-4 text-body-sm">--</td>
+<td class="px-6 py-4">
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="View Details">visibility</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Reassign">move_item</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Manual Review">rate_review</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Escalate">priority_high</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Mark False">block</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container transition-colors group">
+<td class="px-6 py-4 font-data-mono text-data-mono">#GR-9928</td>
+<td class="px-6 py-4 text-body-sm">+91 88XXX X3391</td>
+<td class="px-6 py-4 text-body-sm">Water Leakage</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-12 bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 89%"></div>
+</div>
+<span class="text-data-mono text-[11px] font-bold text-secondary">89%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-error/10 text-error">Urgent</span>
+</td>
+<td class="px-6 py-4 text-body-sm">Ward 10, Industrial Area</td>
+<td class="px-6 py-4 text-body-sm">Water Authority</td>
+<td class="px-6 py-4">
+<span class="flex items-center gap-1.5 text-body-sm">
+<span class="w-2 h-2 rounded-full bg-yellow-500"></span> Pending
+                                    </span>
+</td>
+<td class="px-6 py-4 text-body-sm">12h</td>
+<td class="px-6 py-4">
+<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="View Details">visibility</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Reassign">move_item</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary" title="Manual Review">rate_review</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Escalate">priority_high</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-error" title="Mark False">block</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 border-t border-outline-variant flex justify-between items-center bg-surface-bright">
+<span class="text-body-sm text-on-surface-variant">Showing 1-10 of 1,248 complaints</span>
+<div class="flex gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-primary bg-primary text-white font-bold text-body-sm">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-white transition-colors text-body-sm">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-white transition-colors text-body-sm">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Bento Status Cards -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-gutter mt-8">
+<div class="bg-white border border-outline-variant rounded-lg p-5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 rounded-lg bg-yellow-100 text-yellow-700" data-icon="pending_actions">pending_actions</span>
+<span class="text-on-secondary-container font-bold text-body-sm">+12%</span>
+</div>
+<h4 class="text-on-surface-variant font-label-uppercase text-label-uppercase mb-1">Awaiting AI Verification</h4>
+<p class="text-h1 font-h1">412</p>
+</div>
+<div class="bg-white border border-outline-variant rounded-lg p-5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 rounded-lg bg-blue-100 text-blue-700" data-icon="engineering">engineering</span>
+<span class="text-on-secondary-container font-bold text-body-sm">+5%</span>
+</div>
+<h4 class="text-on-surface-variant font-label-uppercase text-label-uppercase mb-1">Active Field Assignments</h4>
+<p class="text-h1 font-h1">856</p>
+</div>
+<div class="bg-white border border-outline-variant rounded-lg p-5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 rounded-lg bg-red-100 text-red-700" data-icon="priority_high">priority_high</span>
+<span class="text-error font-bold text-body-sm">+2%</span>
+</div>
+<h4 class="text-on-surface-variant font-label-uppercase text-label-uppercase mb-1">Critical Bottlenecks</h4>
+<p class="text-h1 font-h1">18</p>
+</div>
+<div class="bg-white border border-outline-variant rounded-lg p-5">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 rounded-lg bg-green-100 text-green-700" data-icon="task_alt">task_alt</span>
+<span class="text-on-secondary-container font-bold text-body-sm">+28%</span>
+</div>
+<h4 class="text-on-surface-variant font-label-uppercase text-label-uppercase mb-1">Resolved (Last 24h)</h4>
+<p class="text-h1 font-h1">1,029</p>
+</div>
+</section>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-8 right-8 bg-secondary text-on-secondary w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-50">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</body></html>

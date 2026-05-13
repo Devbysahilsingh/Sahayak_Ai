@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Smart Grievance Routing System - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;family=Inter:wght@400;600&amp;family=JetBrains+Mono:wght@450&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#af895a",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d1dbe8",
+                        "primary-fixed-dim": "#b0c9ea",
+                        "secondary-fixed-dim": "#75d6d6",
+                        "on-tertiary-fixed-variant": "#5f4119",
+                        "on-primary-fixed": "#001d36",
+                        "error": "#ba1a1a",
+                        "on-background": "#121d26",
+                        "surface-container-highest": "#d9e3f1",
+                        "surface-container-low": "#edf4ff",
+                        "on-surface": "#121d26",
+                        "surface-variant": "#d9e3f1",
+                        "on-secondary-container": "#007070",
+                        "outline": "#74777e",
+                        "outline-variant": "#c3c6ce",
+                        "secondary-container": "#91f3f2",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#43474d",
+                        "on-tertiary-fixed": "#2a1700",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#3c2300",
+                        "surface-tint": "#48607d",
+                        "tertiary-fixed": "#ffddb8",
+                        "primary": "#00152a",
+                        "surface-bright": "#f7f9ff",
+                        "tertiary": "#201100",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#91f3f2",
+                        "on-secondary-fixed": "#002020",
+                        "secondary": "#006a6a",
+                        "surface-container": "#e4effd",
+                        "surface": "#f7f9ff",
+                        "primary-fixed": "#d1e4ff",
+                        "inverse-primary": "#b0c9ea",
+                        "background": "#f7f9ff",
+                        "on-primary-fixed-variant": "#304864",
+                        "tertiary-fixed-dim": "#ebbf8c",
+                        "on-primary-container": "#7992b1",
+                        "inverse-on-surface": "#e8f2ff",
+                        "inverse-surface": "#27313c",
+                        "surface-container-high": "#dfe9f7",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#0f2a44",
+                        "on-secondary-fixed-variant": "#004f50",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "sidebar-width": "260px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "data-mono": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "h1": ["Public Sans"],
+                        "display": ["Public Sans"],
+                        "body-lg": ["Inter"],
+                        "h3": ["Public Sans"],
+                        "h2": ["Public Sans"],
+                        "label-uppercase": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-mono": ["13px", {"lineHeight": "18px", "fontWeight": "450"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h3": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-uppercase": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #F5F7FA;
+        }
+        .login-card {
+            border: 1px solid #E1E7EF;
+            box-shadow: none;
+        }
+        .otp-input:focus {
+            border: 2px solid #0F2A44;
+            outline: none;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen items-center justify-center p-margin-mobile">
+<!-- Login Container -->
+<main class="w-full max-w-[480px]">
+<!-- Header Section -->
+<header class="text-center mb-10">
+<div class="mb-6 flex justify-center">
+<div class="h-16 w-16 bg-primary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[32px]" data-icon="account_balance">account_balance</span>
+</div>
+</div>
+<h1 class="font-display text-h1 text-primary mb-2">Smart Grievance Routing System</h1>
+<p class="font-body-md text-on-surface-variant">Login to submit and track civic complaints.</p>
+</header>
+<!-- Login Card -->
+<div class="login-card bg-surface-container-lowest p-8 rounded-xl">
+<form class="space-y-6">
+<!-- Mobile Number Section -->
+<div class="space-y-2">
+<label class="font-body-sm font-600 text-primary block" for="mobile">Mobile Number</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-data-mono">+91</span>
+<input class="w-full pl-12 pr-4 py-3 border border-outline-variant rounded-lg font-data-mono text-body-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all" id="mobile" name="mobile" placeholder="9876543210" type="tel"/>
+</div>
+</div>
+<!-- Generate OTP Button -->
+<button class="w-full bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary font-label-uppercase py-3 rounded-lg transition-colors flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="sms">sms</span>
+                    Generate OTP
+                </button>
+<!-- Divider -->
+<div class="relative py-2">
+<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-outline-variant"></div></div>
+<div class="relative flex justify-center text-xs uppercase"><span class="bg-surface-container-lowest px-2 text-on-surface-variant font-label-uppercase">Verification</span></div>
+</div>
+<!-- OTP Input Section -->
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="font-body-sm font-600 text-primary">Enter OTP</label>
+<span class="text-secondary font-label-uppercase cursor-pointer hover:underline">Resend OTP</span>
+</div>
+<div class="flex gap-3 justify-between">
+<input class="otp-input w-12 h-14 text-center text-h2 font-data-mono border border-outline-variant rounded-lg bg-surface-bright" maxlength="1" placeholder="·" type="text"/>
+<input class="otp-input w-12 h-14 text-center text-h2 font-data-mono border border-outline-variant rounded-lg bg-surface-bright" maxlength="1" placeholder="·" type="text"/>
+<input class="otp-input w-12 h-14 text-center text-h2 font-data-mono border border-outline-variant rounded-lg bg-surface-bright" maxlength="1" placeholder="·" type="text"/>
+<input class="otp-input w-12 h-14 text-center text-h2 font-data-mono border border-outline-variant rounded-lg bg-surface-bright" maxlength="1" placeholder="·" type="text"/>
+<input class="otp-input w-12 h-14 text-center text-h2 font-data-mono border border-outline-variant rounded-lg bg-surface-bright" maxlength="1" placeholder="·" type="text"/>
+<input class="otp-input w-12 h-14 text-center text-h2 font-data-mono border border-outline-variant rounded-lg bg-surface-bright" maxlength="1" placeholder="·" type="text"/>
+</div>
+</div>
+<!-- Verify and Continue Button -->
+<button class="w-full bg-primary-container hover:bg-primary text-on-primary font-label-uppercase py-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm" type="submit">
+                    Verify and Continue
+                    <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Prototype Notice -->
+<div class="mt-8 p-4 bg-surface-container-low rounded-lg border border-outline-variant/30">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="info">info</span>
+<p class="font-body-sm text-on-surface-variant leading-relaxed">
+<span class="font-600 text-primary">Note:</span> Prototype OTP is generated by the system. No SMS provider is used in this version. Use any 6 digits to proceed.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Footer Links -->
+<footer class="mt-8 text-center space-y-4">
+<div class="flex justify-center gap-6 font-label-uppercase text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Help Center</a>
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms</a>
+</div>
+<p class="font-body-sm text-outline">© 2024 Digital Governance Initiative</p>
+</footer>
+</main>
+<!-- Background Illustration Elements (Subtle) -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none opacity-5">
+<div class="absolute top-10 left-10 h-64 w-64 border-4 border-primary rounded-full"></div>
+<div class="absolute bottom-10 right-10 h-96 w-96 border-4 border-secondary rounded-full"></div>
+</div>
+</body></html>

@@ -1,0 +1,14 @@
+{
+  "base_model": "distilbert-base-multilingual-cased",
+  "dataset": "E:\\bgi hackathon\\Sahayak_Ai\\citizen-grievance-system\\ai_engine\\data\\processed\\enterprise_governance_pipeline_ready.csv",
+  "rows": 30529,
+  "priority_model": {
+    "eval_loss": 0.12142399698495865,
+    "eval_accuracy": 0.9610219456272519,
+    "eval_f1": 0.9603238366575343,
+    "eval_runtime": 20.0233,
+    "eval_samples_per_second": 304.945,
+    "eval_steps_per_second": 38.156,
+    "epoch": 3.0
+  }
+}
