@@ -1,11 +1,17 @@
 services:
   - type: web
     name: sahayak-ai-backend
-    env: python
+    runtime: python
     rootDir: citizen-grievance-system/backend
-    plan: free
+    plan: starter
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput
     startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/health/
+    disk:
+      name: backend-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -23,6 +29,10 @@ services:
         value: "True"
       - key: CSRF_COOKIE_SECURE
         value: "True"
+      - key: SQLITE_PATH
+        value: /var/data/db.sqlite3
+      - key: MEDIA_ROOT
+        value: /var/data/media
       - key: MONGODB_URI
         sync: false
       - key: MONGODB_DB_NAME
@@ -37,18 +47,15 @@ services:
         value: "False"
       - key: VOICE_TRANSCRIPTION_ENABLED
         value: "True"
-    disk:
-      name: backend-media
-      mountPath: /opt/render/project/src/citizen-grievance-system/backend/media
-      sizeGB: 1
 
   - type: web
     name: sahayak-ai-engine
-    env: python
+    runtime: python
     rootDir: citizen-grievance-system/ai_engine
-    plan: free
+    plan: standard
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -59,10 +66,10 @@ services:
       - key: TRANSLATION_MODEL_NAME
         value: facebook/nllb-200-distilled-600M
 
-  - type: static
+  - type: web
     name: sahayak-ai-frontend
+    runtime: static
     rootDir: citizen-grievance-system/frontend
-    plan: free
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:

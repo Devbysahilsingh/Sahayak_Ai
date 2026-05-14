@@ -1,14 +1,29 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate, useParams } from "react-router-dom";
 import LocationPicker from "../components/LocationPicker";
 import { Badge, Button, Card, EmptyMap, Field, Icon, StatCard, Table, inputClass } from "../components/ui";
 import { api, clearSession, getCurrentUser, resolveMediaUrl } from "../lib/api";
 import { formatDateTime, priorityTone, sortByPriority, statusTone } from "../lib/format";
-import { buildComplaintSpeech, buildNotificationSpeech, speakText, stopSpeaking } from "../lib/tts";
+import { TTS_LANGUAGE_OPTIONS, buildComplaintSpeech, getPreferredTtsLanguage, setPreferredTtsLanguage, speakComplaint, speakNotification, stopSpeaking } from "../lib/tts";
+
+const citizenNav = [
+  { to: "/my-grievances", label: "Grievances", icon: "list_alt" },
+  { to: "/submit", label: "Submit", icon: "add_circle" },
+  { to: "/notifications", label: "Alerts", icon: "notifications" },
+];
 
 function CitizenShell({ children }) {
   const navigate = useNavigate();
   const user = getCurrentUser("citizen");
+  const [ttsLanguage, setTtsLanguage] = useState(getPreferredTtsLanguage());
+
+  function changeTtsLanguage(event) {
+    const lang = event.target.value;
+    setTtsLanguage(lang);
+    setPreferredTtsLanguage(lang);
+    stopSpeaking();
+  }
+
   function logout() {
     clearSession("citizen");
     navigate("/login");
@@ -18,22 +33,27 @@ function CitizenShell({ children }) {
     <div className="min-h-screen bg-surface-muted">
       <header className="sticky top-0 z-20 border-b border-border bg-white px-4 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <Link to="/my-grievances" className="font-display text-lg font-bold text-primary">
+          <Link to="/my-grievances" className="max-w-[170px] truncate font-display text-base font-bold text-primary sm:max-w-none sm:text-lg">
             Smart Grievance Routing System
           </Link>
           <nav className="hidden items-center gap-2 text-sm font-semibold text-text-muted md:flex">
-            <Link className="rounded-md px-3 py-2 hover:bg-surface-soft" to="/my-grievances">
-              My Grievances
-            </Link>
-            <Link className="rounded-md px-3 py-2 hover:bg-surface-soft" to="/submit">
-              Submit
-            </Link>
-            <Link className="rounded-md px-3 py-2 hover:bg-surface-soft" to="/notifications">
-              Notifications
-            </Link>
+            {citizenNav.map((item) => (
+              <Link key={item.to} className="rounded-md px-3 py-2 hover:bg-surface-soft" to={item.to}>
+                {item.label}
+              </Link>
+            ))}
           </nav>
-          <div className="flex items-center gap-3 text-sm text-text-muted">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-3 text-sm text-text-muted">
+            <label className="flex items-center gap-2 font-semibold text-primary">
+              <Icon name="record_voice_over" className="text-secondary" />
+              <span className="sr-only">Text to speech language</span>
+              <select className="rounded-md border border-border bg-white px-2 py-1 text-sm text-primary" value={ttsLanguage} onChange={changeTtsLanguage} title="Text to speech language">
+                {TTS_LANGUAGE_OPTIONS.map((item) => (
+                  <option key={item.lang} value={item.lang}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+            <div className="hidden items-center gap-2 sm:flex">
               <Icon name="verified_user" className="text-secondary" />
               +91 {user?.mobile_number || "Verified User"}
             </div>
@@ -43,7 +63,23 @@ function CitizenShell({ children }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl p-4 lg:p-8">{children}</main>
+      <main className="mx-auto max-w-7xl p-4 pb-24 lg:p-8">{children}</main>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-3 border-t border-border bg-white px-2 py-2 shadow-[0_-8px_24px_rgba(15,42,68,0.08)] md:hidden">
+        {citizenNav.map((item) => (
+          <NavLink
+            key={item.to}
+            className={({ isActive }) =>
+              `flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold ${
+                isActive ? "bg-secondary/10 text-secondary" : "text-text-muted"
+              }`
+            }
+            to={item.to}
+          >
+            <Icon name={item.icon} className="text-[22px]" />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+      </nav>
     </div>
   );
 }
@@ -119,6 +155,12 @@ export function SubmitComplaintPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [attachments, setAttachments] = useState([]);
+  const [complaintFor, setComplaintFor] = useState("self");
+  const [affectedPerson, setAffectedPerson] = useState({
+    name: "",
+    mobile: "",
+    relationship: "",
+  });
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [location, setLocation] = useState({
@@ -141,6 +183,10 @@ export function SubmitComplaintPage() {
         ward: location.ward,
         landmark: location.landmark,
         location,
+        complaint_for: complaintFor,
+        affected_person_name: complaintFor === "known_member" ? affectedPerson.name : "",
+        affected_person_mobile: complaintFor === "known_member" ? affectedPerson.mobile : "",
+        affected_person_relationship: complaintFor === "known_member" ? affectedPerson.relationship : "",
         attachments,
       });
       navigate("/submitted", { state: { complaint: data.complaint } });
@@ -238,6 +284,60 @@ export function SubmitComplaintPage() {
             <Field label="Verified Contact">
               <input className={inputClass} value={`+91 ${user?.mobile_number || ""}`} readOnly />
             </Field>
+            <Field label="Who is this complaint for?">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className={`rounded-md border px-4 py-3 text-left font-semibold transition ${
+                    complaintFor === "self" ? "border-secondary bg-secondary/10 text-primary" : "border-border bg-white text-text-muted hover:border-secondary"
+                  }`}
+                  onClick={() => setComplaintFor("self")}
+                >
+                  <Icon name="person" className="mr-2 text-secondary" />
+                  For myself
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md border px-4 py-3 text-left font-semibold transition ${
+                    complaintFor === "known_member" ? "border-secondary bg-secondary/10 text-primary" : "border-border bg-white text-text-muted hover:border-secondary"
+                  }`}
+                  onClick={() => setComplaintFor("known_member")}
+                >
+                  <Icon name="group" className="mr-2 text-secondary" />
+                  For a known member
+                </button>
+              </div>
+            </Field>
+            {complaintFor === "known_member" ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                <Field label="Member name">
+                  <input
+                    className={inputClass}
+                    value={affectedPerson.name}
+                    onChange={(event) => setAffectedPerson((current) => ({ ...current, name: event.target.value }))}
+                    placeholder="Name of affected person"
+                    required
+                  />
+                </Field>
+                <Field label="Member contact number">
+                  <input
+                    className={inputClass}
+                    value={affectedPerson.mobile}
+                    onChange={(event) => setAffectedPerson((current) => ({ ...current, mobile: event.target.value }))}
+                    placeholder="Mobile number"
+                    required
+                  />
+                </Field>
+                <Field label="Relationship">
+                  <input
+                    className={inputClass}
+                    value={affectedPerson.relationship}
+                    onChange={(event) => setAffectedPerson((current) => ({ ...current, relationship: event.target.value }))}
+                    placeholder="Friend, neighbour, family..."
+                  />
+                </Field>
+              </div>
+            ) : null}
             <Field label="Photo or video proof (optional)">
               <input
                 className={inputClass}
@@ -254,12 +354,14 @@ export function SubmitComplaintPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="mb-4 font-display text-xl font-bold text-primary">Complaint Location</h2>
+          <h2 className="mb-4 font-display text-xl font-bold text-primary">
+            {complaintFor === "known_member" ? "Affected Member Location" : "Complaint Location"}
+          </h2>
           <LocationPicker value={location} onChange={setLocation} />
         </Card>
 
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-          <Button className="px-8 py-3" disabled={!text || !location.latitude || !location.longitude}>
+          <Button className="px-8 py-3" disabled={!text || !location.latitude || !location.longitude || (complaintFor === "known_member" && (!affectedPerson.name || !affectedPerson.mobile))}>
             Submit Complaint
           </Button>
           {message ? <p className="text-sm text-danger">{message}</p> : null}
@@ -276,10 +378,10 @@ export function SubmissionConfirmedPage() {
 
   useEffect(() => {
     if (speechText) {
-      speakText(speechText);
+      speakComplaint(complaint);
     }
     return stopSpeaking;
-  }, [speechText]);
+  }, [complaint, speechText]);
 
   return (
     <CitizenShell>
@@ -291,7 +393,7 @@ export function SubmissionConfirmedPage() {
         <p className="mt-2 text-text-muted">Your grievance has been registered and routed for action.</p>
         {speechText ? (
           <div className="mt-5 flex justify-center gap-3">
-            <Button type="button" variant="secondary" onClick={() => speakText(speechText)}>
+            <Button type="button" variant="secondary" onClick={() => speakComplaint(complaint)}>
               <Icon name="volume_up" /> Listen
             </Button>
             <Button type="button" variant="outline" onClick={stopSpeaking}>
@@ -353,8 +455,6 @@ export function ComplaintTrackingPage() {
   if (error || !complaint) {
     return <CitizenShell><EmptyState title="Complaint not found" message={error || "No complaint found for this ID."} /></CitizenShell>;
   }
-  const speechText = buildComplaintSpeech(complaint);
-
   async function submitFeedback(isResolved) {
     setFeedbackMessage("");
     try {
@@ -379,7 +479,7 @@ export function ComplaintTrackingPage() {
           <p className="text-text-muted">{complaint.summary}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" variant="outline" onClick={() => speakText(speechText)}>
+          <Button type="button" variant="outline" onClick={() => speakComplaint(complaint)}>
             <Icon name="volume_up" /> Listen Status
           </Button>
           <Badge tone={statusTone(complaint.status)}>{complaint.status}</Badge>
@@ -464,7 +564,7 @@ export function NotificationsPage() {
         <h1 className="font-display text-3xl font-bold text-primary">Notifications</h1>
         {latestNotification ? (
           <div className="flex gap-3">
-            <Button type="button" variant="secondary" onClick={() => speakText(buildNotificationSpeech(latestNotification))}>
+            <Button type="button" variant="secondary" onClick={() => speakNotification(latestNotification)}>
               <Icon name="volume_up" /> Listen Latest
             </Button>
             <Button type="button" variant="outline" onClick={stopSpeaking}>
@@ -490,7 +590,7 @@ export function NotificationsPage() {
                 <button
                   className="flex items-center gap-1 text-sm font-semibold text-secondary hover:underline"
                   type="button"
-                  onClick={() => speakText(buildNotificationSpeech(item))}
+                  onClick={() => speakNotification(item)}
                 >
                   <Icon name="volume_up" className="text-[18px]" /> Listen
                 </button>

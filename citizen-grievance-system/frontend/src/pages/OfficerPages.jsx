@@ -14,7 +14,11 @@ const officerNav = [
 ];
 
 function OfficerShell({ children }) {
-  return <SidebarLayout title="Worker Portal" subtitle="Field Verification" navItems={officerNav}>{children}</SidebarLayout>;
+  return (
+    <SidebarLayout title="Worker Portal" subtitle="Field Verification" navItems={officerNav} scope="worker" loginPath="/worker/login">
+      {children}
+    </SidebarLayout>
+  );
 }
 
 function getCurrentPosition() {
@@ -95,6 +99,7 @@ export function OfficerDashboardPage() {
     { key: "priority", label: "Priority", render: (row) => <Badge tone={priorityTone(row.priority)}>{row.priority}</Badge> },
     { key: "status", label: "Status", render: (row) => <Badge tone={statusTone(row.status)}>{row.status}</Badge> },
     { key: "location", label: "Location" },
+    { key: "affectedContact", label: "Affected Contact" },
     { key: "distance", label: "Distance", render: (row) => formatDistance(row, workerLocation) },
     { key: "sla", label: "SLA Deadline" },
   ];
@@ -301,6 +306,10 @@ export function OfficerComplaintDetailPage() {
               <Info label="SLA Deadline" value={complaint.sla} />
               <Info label="ETA" value={complaint.eta} />
               <Info label="Citizen Proof" value={complaint.hasCitizenProof ? `${complaint.citizenProofCount} file(s)` : "Not uploaded"} />
+              <Info label="Complaint For" value={complaint.complaintFor === "known_member" ? "Known member" : "Self"} />
+              <Info label="Affected Person" value={complaint.affectedPersonName || "-"} />
+              <Info label="Affected Contact" value={complaint.affectedPersonMobile || "-"} />
+              <Info label="Relationship" value={complaint.affectedPersonRelationship || "-"} />
             </div>
             <div className="mt-5 grid gap-3 rounded-md border border-border bg-surface-soft p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -343,11 +352,14 @@ export function OfficerComplaintDetailPage() {
 function CameraCapture({ label, value, onCapture }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
   const readinessTimerRef = useRef(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [error, setError] = useState("");
+  const [devices, setDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
 
   function clearReadinessTimer() {
     if (readinessTimerRef.current) {
@@ -356,17 +368,27 @@ function CameraCapture({ label, value, onCapture }) {
     }
   }
 
+  async function loadCameraDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = mediaDevices.filter((device) => device.kind === "videoinput");
+    setDevices(videoDevices);
+    if (!selectedDeviceId && videoDevices.length) {
+      const backCamera = videoDevices.find((device) => /back|rear|environment/i.test(device.label));
+      setSelectedDeviceId((backCamera || videoDevices[0]).deviceId);
+    }
+  }
+
   function waitForVideoFrame(video, attempts = 0) {
     if (!video || !streamRef.current) return;
-    if (video.videoWidth > 0 && video.videoHeight > 0) {
+    if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
       clearReadinessTimer();
       setCameraReady(true);
-      setError("");
       return;
     }
-    if (attempts > 80) {
+    if (attempts > 120) {
       setCameraReady(false);
-      setError("Camera opened but no video frame was received. Close other camera apps, allow browser camera permission, then retry.");
+      setError("The browser opened a camera stream but did not provide a visible frame. Try another camera below or use Device Camera.");
       return;
     }
     window.requestAnimationFrame(() => waitForVideoFrame(video, attempts + 1));
@@ -375,10 +397,12 @@ function CameraCapture({ label, value, onCapture }) {
   async function attachStreamToVideo(video = videoRef.current) {
     if (!video || !streamRef.current) return;
     video.srcObject = streamRef.current;
+    video.muted = true;
+    video.playsInline = true;
     try {
       await video.play();
     } catch {
-      // Browser may wait for metadata before play resolves.
+      // Some browsers resolve play only after metadata is available.
     }
     waitForVideoFrame(video);
   }
@@ -394,35 +418,49 @@ function CameraCapture({ label, value, onCapture }) {
     setCameraReady(false);
   }
 
-  async function openCamera() {
+  async function openCamera(deviceId = selectedDeviceId) {
     setError("");
     setCameraReady(false);
+    stopCamera();
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("Camera is not available in this browser.");
+      setError("Live preview is not available in this browser. Use Device Camera instead.");
       return;
     }
     try {
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      }
+      const video = deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
+      const stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
       streamRef.current = stream;
       setCameraOpen(true);
+      await loadCameraDevices();
       window.setTimeout(() => attachStreamToVideo(), 0);
       readinessTimerRef.current = window.setTimeout(() => {
-        if (!cameraReady) setError("Camera is taking too long to start. Try Cancel and Open Camera again.");
-      }, 7000);
+        setError("If the preview is black, switch camera or use Device Camera. The stream is open but the browser may be returning a blank camera feed.");
+      }, 5000);
     } catch {
-      setError("Camera permission was denied or no camera was found.");
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        streamRef.current = stream;
+        setCameraOpen(true);
+        await loadCameraDevices();
+        window.setTimeout(() => attachStreamToVideo(), 0);
+      } catch {
+        setError("Camera permission was denied or no camera was found. Use Device Camera if your browser supports it.");
+      }
     }
+  }
+
+  async function changeCamera(event) {
+    const deviceId = event.target.value;
+    setSelectedDeviceId(deviceId);
+    if (cameraOpen) await openCamera(deviceId);
   }
 
   function capturePhoto() {
     const video = videoRef.current;
     if (!video || !cameraReady || !video.videoWidth || !video.videoHeight) {
-      setError("Camera is still starting. Wait until preview is visible, then capture.");
+      setError("Camera is still starting. Wait until preview is visible, switch camera, or use Device Camera.");
       return;
     }
     const canvas = document.createElement("canvas");
@@ -432,7 +470,7 @@ function CameraCapture({ label, value, onCapture }) {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     canvas.toBlob((blob) => {
       if (!blob) {
-        setError("Could not capture photo. Try again.");
+        setError("Could not capture photo. Try Device Camera instead.");
         return;
       }
       const file = new File([blob], `field-evidence-${Date.now()}.jpg`, { type: "image/jpeg" });
@@ -443,6 +481,20 @@ function CameraCapture({ label, value, onCapture }) {
     }, "image/jpeg", 0.92);
   }
 
+  function handleNativePhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
+    onCapture(file);
+    setError("");
+    stopCamera();
+  }
+
+  useEffect(() => {
+    loadCameraDevices().catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (cameraOpen) attachStreamToVideo();
   }, [cameraOpen]);
@@ -451,6 +503,7 @@ function CameraCapture({ label, value, onCapture }) {
     if (!value && previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [value, previewUrl]);
 
@@ -462,9 +515,34 @@ function CameraCapture({ label, value, onCapture }) {
   return (
     <Field label={label}>
       <div className="grid gap-3 rounded-md border border-border bg-surface-soft p-3">
-        {cameraOpen ? <video ref={videoRef} className="aspect-video w-full rounded-md bg-black object-cover" autoPlay playsInline muted onLoadedMetadata={(event) => attachStreamToVideo(event.currentTarget)} onCanPlay={(event) => waitForVideoFrame(event.currentTarget)} /> : previewUrl ? <img className="aspect-video w-full rounded-md object-cover" src={previewUrl} alt="Captured field evidence" /> : <div className="flex aspect-video items-center justify-center rounded-md border border-dashed border-border bg-white text-sm text-text-muted">No live photo captured yet</div>}
+        {devices.length > 1 ? (
+          <select className={inputClass} value={selectedDeviceId} onChange={changeCamera}>
+            {devices.map((device, index) => (
+              <option key={device.deviceId} value={device.deviceId}>{device.label || `Camera ${index + 1}`}</option>
+            ))}
+          </select>
+        ) : null}
+        {cameraOpen ? (
+          <video ref={videoRef} className="aspect-video w-full rounded-md bg-black object-cover" autoPlay playsInline muted onLoadedMetadata={(event) => attachStreamToVideo(event.currentTarget)} onCanPlay={(event) => waitForVideoFrame(event.currentTarget)} />
+        ) : previewUrl ? (
+          <img className="aspect-video w-full rounded-md object-cover" src={previewUrl} alt="Captured field evidence" />
+        ) : (
+          <div className="flex aspect-video items-center justify-center rounded-md border border-dashed border-border bg-white text-sm text-text-muted">No live photo captured yet</div>
+        )}
+        <input ref={fileInputRef} className="hidden" type="file" accept="image/*" capture="environment" onChange={handleNativePhoto} />
         <div className="flex flex-wrap gap-2">
-          {!cameraOpen ? <Button type="button" variant="secondary" onClick={openCamera}><Icon name="photo_camera" /> Open Camera</Button> : <><Button type="button" variant="primary" onClick={capturePhoto} disabled={!cameraReady}><Icon name="camera" /> {cameraReady ? "Capture Photo" : "Starting Camera"}</Button><Button type="button" variant="outline" onClick={stopCamera}>Cancel</Button></>}
+          {!cameraOpen ? (
+            <>
+              <Button type="button" variant="secondary" onClick={() => openCamera()}><Icon name="photo_camera" /> Open Live Camera</Button>
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}><Icon name="add_a_photo" /> Use Device Camera</Button>
+            </>
+          ) : (
+            <>
+              <Button type="button" variant="primary" onClick={capturePhoto} disabled={!cameraReady}><Icon name="camera" /> {cameraReady ? "Capture Photo" : "Starting Camera"}</Button>
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}><Icon name="add_a_photo" /> Device Camera</Button>
+              <Button type="button" variant="outline" onClick={stopCamera}>Cancel</Button>
+            </>
+          )}
           {value ? <Badge tone="green">Photo captured</Badge> : null}
         </div>
         {error ? <p className="text-sm text-danger">{error}</p> : null}
@@ -472,7 +550,6 @@ function CameraCapture({ label, value, onCapture }) {
     </Field>
   );
 }
-
 function Info({ label, value }) {
   return <div><p className="text-xs font-bold uppercase tracking-wide text-text-muted">{label}</p><p className="mt-1 font-semibold text-primary">{value}</p></div>;
 }
@@ -493,6 +570,11 @@ function mapComplaint(item) {
     category: item.category_label || item.category || "Manual Review",
     confidence: Math.round((item.confidence_score || 0) * 100),
     priority: item.priority || "Medium",
+    complaintFor: item.complaint_for || "self",
+    affectedPersonName: item.affected_person_name || "",
+    affectedPersonMobile: item.affected_person_mobile || "",
+    affectedPersonRelationship: item.affected_person_relationship || "",
+    affectedContact: item.complaint_for === "known_member" ? (item.affected_person_mobile || item.affected_person_name || "-") : item.citizen?.mobile_number || "-",
     status: humanize(item.status || "submitted"),
     department: item.assigned_department?.name || "-",
     location: item.address || item.ward || "-",

@@ -129,6 +129,8 @@ export function ComplaintsQueuePage() {
   const columns = [
     { key: "id", label: "Complaint ID" },
     { key: "citizen", label: "Citizen Mobile" },
+    { key: "complaintForLabel", label: "For" },
+    { key: "affectedContact", label: "Affected Contact" },
     { key: "category", label: "Category" },
     { key: "confidence", label: "Confidence", render: (row) => `${row.confidence}%` },
     { key: "priority", label: "Priority", render: (row) => <Badge tone={priorityTone(row.priority)}>{row.priority}</Badge> },
@@ -457,6 +459,10 @@ export function AdminComplaintDetailPage() {
             <InfoGrid
               items={[
                 ["Citizen", complaint.citizen],
+                ["Complaint For", complaint.complaintFor === "known_member" ? "Known member" : "Self"],
+                ["Affected Person", complaint.affectedPersonName || "-"],
+                ["Affected Contact", complaint.affectedPersonMobile || "-"],
+                ["Relationship", complaint.affectedPersonRelationship || "-"],
                 ["Language", complaint.language],
                 ["Status", complaint.status],
                 ["Approved ETA", complaint.eta],
@@ -1147,6 +1153,12 @@ function mapComplaint(item) {
     category: item.category_label || item.category || "Manual Review",
     confidence: Math.round((item.confidence_score || 0) * 100),
     priority: item.priority || "Medium",
+    complaintFor: item.complaint_for || "self",
+    affectedPersonName: item.affected_person_name || "",
+    affectedPersonMobile: item.affected_person_mobile || "",
+    affectedPersonRelationship: item.affected_person_relationship || "",
+    complaintForLabel: item.complaint_for === "known_member" ? "Known member" : "Self",
+    affectedContact: item.complaint_for === "known_member" ? (item.affected_person_mobile || item.affected_person_name || "-") : item.citizen?.mobile_number || "-",
     status: humanize(item.status || "submitted"),
     department: item.assigned_department?.name || "-",
     officer: item.assigned_officer?.name || "-",

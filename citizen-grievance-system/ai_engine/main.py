@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
+BASE_DIR = Path(__file__).resolve().parent
 
 from transformers import (
     AutoTokenizer,
@@ -53,7 +54,7 @@ app = FastAPI(
 # LOAD MODEL PATH
 # =========================================
 
-PIPELINE_PATH = Path("models/grievance_pipeline")
+PIPELINE_PATH = Path(os.getenv("PIPELINE_PATH", BASE_DIR / "models" / "grievance_pipeline"))
 
 DEPARTMENT_NAME_MAP = {
     "Water Supply": "Water Supply",
@@ -87,11 +88,15 @@ def load_pipeline_model(name):
     path = PIPELINE_PATH / name
     if not path.exists():
         return None
-    return {
-        "tokenizer": AutoTokenizer.from_pretrained(str(path)),
-        "model": AutoModelForSequenceClassification.from_pretrained(str(path)),
-        "labels": load_label_mapping(path),
-    }
+    try:
+        return {
+            "tokenizer": AutoTokenizer.from_pretrained(str(path)),
+            "model": AutoModelForSequenceClassification.from_pretrained(str(path)),
+            "labels": load_label_mapping(path),
+        }
+    except Exception as exc:
+        print(f"Could not load {name}; falling back to rules: {exc}")
+        return None
 
 
 print("Checking new AI pipeline models...")
@@ -164,6 +169,16 @@ def home():
         ],
 
         "new_pipeline_ready": pipeline_ready
+    }
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "new_pipeline_ready": pipeline_ready,
+        "device": str(device),
+        "whisper_model_size": WHISPER_MODEL_SIZE,
     }
 
 # =========================================

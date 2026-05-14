@@ -1,0 +1,18 @@
+{
+  "name": "Sahayak AI Grievance System",
+  "short_name": "Sahayak AI",
+  "description": "Citizen grievance submission and worker field verification portal.",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#0f2a44",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

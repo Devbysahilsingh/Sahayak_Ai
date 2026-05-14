@@ -441,6 +441,10 @@ def complaint_to_dict(complaint):
         "classification_source": complaint.classification_source,
         "manual_review_required": complaint.manual_review_required,
         "priority": complaint.priority,
+        "complaint_for": complaint.complaint_for,
+        "affected_person_name": complaint.affected_person_name,
+        "affected_person_mobile": complaint.affected_person_mobile,
+        "affected_person_relationship": complaint.affected_person_relationship,
         "location": complaint.location,
         "latitude": complaint.latitude,
         "longitude": complaint.longitude,
@@ -1048,6 +1052,14 @@ def create_complaint(citizen, payload, uploaded_files=None):
     zone = payload.get("zone") or location.get("zone", "")
     address = payload.get("address") or location.get("address", "")
     landmark = payload.get("landmark") or location.get("landmark", "")
+    complaint_for = (payload.get("complaint_for") or "self").strip()
+    if complaint_for not in ["self", "known_member"]:
+        complaint_for = "self"
+    affected_person_name = (payload.get("affected_person_name") or "").strip()
+    affected_person_mobile = (payload.get("affected_person_mobile") or "").strip()
+    affected_person_relationship = (payload.get("affected_person_relationship") or "").strip()
+    if complaint_for == "known_member" and (not affected_person_name or not affected_person_mobile):
+        raise ValueError("Affected member name and contact number are required.")
 
     citizen_attachments = save_uploaded_files(
         uploaded_files or [],
@@ -1070,6 +1082,10 @@ def create_complaint(citizen, payload, uploaded_files=None):
         classification_source="queued",
         manual_review_required=False,
         priority="Medium",
+        complaint_for=complaint_for,
+        affected_person_name=affected_person_name,
+        affected_person_mobile=affected_person_mobile,
+        affected_person_relationship=affected_person_relationship,
         location=location,
         latitude=latitude,
         longitude=longitude,

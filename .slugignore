@@ -1,0 +1,7 @@
+citizen-grievance-system/ai_engine/data/
+citizen-grievance-system/ai_engine/notebooks/
+citizen-grievance-system/ai_engine/models/**/checkpoints/
+citizen-grievance-system/frontend/node_modules/
+citizen-grievance-system/frontend/dist/
+citizen-grievance-system/backend/media/
+*.odt

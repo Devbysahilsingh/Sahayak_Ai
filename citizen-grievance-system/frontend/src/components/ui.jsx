@@ -82,8 +82,26 @@ export const inputClass =
 
 export function Table({ columns, rows, renderActions }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-white">
-      <table className="min-w-full divide-y divide-border text-sm">
+    <div className="rounded-lg border border-border bg-white">
+      <div className="grid divide-y divide-border md:hidden">
+        {rows.map((row) => (
+          <article key={row.id} className="p-4">
+            <div className="grid gap-3">
+              {columns.map((column) => (
+                <div key={column.key} className="grid grid-cols-[112px_1fr] gap-3 text-sm">
+                  <span className="text-xs font-bold uppercase text-text-muted">{column.label}</span>
+                  <span className="min-w-0 break-words font-medium text-text-main">
+                    {column.render ? column.render(row) : row[column.key]}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {renderActions ? <div className="mt-4 border-t border-border pt-3">{renderActions(row)}</div> : null}
+          </article>
+        ))}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="min-w-full divide-y divide-border text-sm">
         <thead className="bg-surface-soft text-left text-xs font-bold uppercase tracking-wide text-text-muted">
           <tr>
             {columns.map((column) => (
@@ -107,6 +125,7 @@ export function Table({ columns, rows, renderActions }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -129,9 +148,9 @@ export function EmptyMap({ label = "Map preview", children }) {
   );
 }
 
-export function SidebarLayout({ title, subtitle, navItems, children }) {
+export function SidebarLayout({ title, subtitle, navItems, children, scope = "admin", loginPath = "/admin/login" }) {
   const navigate = useNavigate();
-  const user = getCurrentUser("admin");
+  const user = getCurrentUser(scope);
   const [search, setSearch] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
@@ -149,8 +168,8 @@ export function SidebarLayout({ title, subtitle, navItems, children }) {
   }
 
   function logout() {
-    clearSession("admin");
-    navigate("/admin/login");
+    clearSession(scope);
+    navigate(loginPath);
   }
 
   return (
@@ -183,7 +202,7 @@ export function SidebarLayout({ title, subtitle, navItems, children }) {
       </aside>
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white px-4 lg:px-8">
-          <Link to="/" className="font-display text-xl font-bold text-primary">
+          <Link to="/" className="max-w-[190px] truncate font-display text-base font-bold text-primary sm:max-w-none sm:text-xl">
             Smart Grievance Routing System
           </Link>
           <div className="relative flex items-center gap-3">
@@ -249,7 +268,23 @@ export function SidebarLayout({ title, subtitle, navItems, children }) {
             ) : null}
           </div>
         </header>
-        <main className="mx-auto max-w-[1440px] p-4 lg:p-8">{children}</main>
+        <main className="mx-auto max-w-[1440px] p-4 pb-24 lg:p-8">{children}</main>
+        <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t border-border bg-white px-2 py-2 shadow-[0_-8px_24px_rgba(15,42,68,0.08)] lg:hidden">
+          {navItems.slice(0, 4).map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-2 text-[11px] font-semibold ${
+                  isActive ? "bg-secondary/10 text-secondary" : "text-text-muted"
+                }`
+              }
+            >
+              <Icon name={item.icon} className="text-[22px]" />
+              <span className="max-w-full truncate">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
       </div>
     </div>
   );
