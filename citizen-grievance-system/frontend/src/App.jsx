@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
 import LoginPage, { WorkerSignupPage } from "./pages/LoginPage";
 import {
   ComplaintTrackingPage,
@@ -27,7 +28,7 @@ import RouteGuard from "./components/RouteGuard";
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage portal="citizen" />} />
       <Route path="/worker/login" element={<LoginPage portal="worker" />} />
       <Route path="/worker/signup" element={<WorkerSignupPage />} />
@@ -60,7 +61,6 @@ export default function App() {
     </Routes>
   );
 }
-
 
 
 

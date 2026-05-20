@@ -96,6 +96,17 @@ export default function LocationPicker({ value, onChange }) {
     }
   }
 
+  function describeGeoError(error) {
+    if (!window.isSecureContext) {
+      return "Current location needs HTTPS on mobile. Open the Cloudflare https link, not the local IP address.";
+    }
+    if (!error) return "Could not get current location. Check browser location permission.";
+    if (error.code === 1) return "Location permission was denied. Enable location permission for this site in your browser settings.";
+    if (error.code === 2) return "Your device could not determine location. Turn on GPS/location services and try again.";
+    if (error.code === 3) return "Location request timed out. Move near a window, keep GPS on, and tap Use Current Location again.";
+    return error.message || "Could not get current location. Check browser location permission.";
+  }
+
   function fetchCurrentLocation() {
     setMode("current");
     setStatus("Fetching current location...");
@@ -109,14 +120,14 @@ export default function LocationPicker({ value, onChange }) {
       (geo) => {
         const latitude = geo.coords.latitude;
         const longitude = geo.coords.longitude;
-        setStatus("Current location selected.");
+        const accuracy = Math.round(geo.coords.accuracy || 0);
+        setStatus(accuracy ? `Current location selected. Accuracy: ${accuracy} meters.` : "Current location selected.");
         reverseGeocode(latitude, longitude);
       },
-      () => {
-        setStatus("Location permission denied. Select location from the map or search.");
-        updateLocation(DEFAULT_POSITION);
+      (error) => {
+        setStatus(`${describeGeoError(error)} You can still search or pick from the map.`);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 },
     );
   }
 

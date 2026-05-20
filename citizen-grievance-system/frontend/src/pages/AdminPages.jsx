@@ -467,6 +467,8 @@ export function AdminComplaintDetailPage() {
                 ["Status", complaint.status],
                 ["Approved ETA", complaint.eta],
                 ["Citizen Proof", complaint.hasCitizenProof ? `${complaint.citizenProofCount} file(s) uploaded` : "No proof uploaded"],
+                ["Proof Location", complaint.proofLocationLabel],
+                ["Proof Justification", complaint.proofLocationJustification || "-"],
                 ["Worker False Evidence", complaint.workerFalseEvidenceCount ? `${complaint.workerFalseEvidenceCount} file(s) awaiting review` : "None"],
                 ["Admin Response", complaint.adminResponse || "Waiting for admin response"],
                 ["Submitted", complaint.submittedAt],
@@ -1159,6 +1161,11 @@ function mapComplaint(item) {
     affectedPersonRelationship: item.affected_person_relationship || "",
     complaintForLabel: item.complaint_for === "known_member" ? "Known member" : "Self",
     affectedContact: item.complaint_for === "known_member" ? (item.affected_person_mobile || item.affected_person_name || "-") : item.citizen?.mobile_number || "-",
+    proofLocation: item.citizen_proof_location || {},
+    proofLocationLabel: item.citizen_proof_location?.latitude
+      ? `${item.citizen_proof_location.matches_complaint_location ? "Matched" : "Mismatch"} (${Math.round(item.citizen_proof_location.distance_meters || 0)} m)`
+      : "Not captured",
+    proofLocationJustification: item.citizen_proof_location?.justification || "",
     status: humanize(item.status || "submitted"),
     department: item.assigned_department?.name || "-",
     officer: item.assigned_officer?.name || "-",

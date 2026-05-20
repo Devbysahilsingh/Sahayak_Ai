@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Sahayak AI",
+    "slug": "sahayak-ai-mobile",
+    "scheme": "sahayakai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Sahayak AI needs camera access to capture live complaint evidence."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Sahayak AI needs location access to tag complaint location and worker progress."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Sahayak AI needs microphone access for voice complaint input."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#14b8a6"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    },
+    "android": {
+      "package": "com.sahayak.ai.mobile",
+      "usesCleartextTraffic": true,
+      "permissions": ["CAMERA", "RECORD_AUDIO", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "POST_NOTIFICATIONS"]
+    },
+    "ios": {
+      "bundleIdentifier": "com.sahayak.ai.mobile",
+      "supportsTablet": true
+    }
+  }
+}

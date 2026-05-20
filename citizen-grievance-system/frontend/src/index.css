@@ -57,6 +57,43 @@ select {
   -webkit-font-smoothing: antialiased;
 }
 
+.app-icon {
+  width: 1.25em;
+  min-width: 1.25em;
+  height: 1.25em;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  vertical-align: -0.2em;
+}
+
+.app-icon::before {
+  content: attr(data-icon);
+  display: none;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .app-icon {
+    font-family: "Material Symbols Outlined", system-ui, sans-serif;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-icon {
+    font-family: system-ui, sans-serif;
+    font-size: 0;
+  }
+
+  .app-icon::before {
+    display: inline-flex;
+    font-size: 18px;
+  }
+}
+
 .app-card {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
@@ -83,4 +120,31 @@ select {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 999px;
+}
+
+.grid-texture {
+  background-image:
+    linear-gradient(rgba(15, 42, 68, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 42, 68, 0.055) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(18px);
+}
+
+.ai-glow {
+  box-shadow: 0 24px 70px rgba(15, 42, 68, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

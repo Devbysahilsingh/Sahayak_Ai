@@ -306,6 +306,8 @@ export function OfficerComplaintDetailPage() {
               <Info label="SLA Deadline" value={complaint.sla} />
               <Info label="ETA" value={complaint.eta} />
               <Info label="Citizen Proof" value={complaint.hasCitizenProof ? `${complaint.citizenProofCount} file(s)` : "Not uploaded"} />
+              <Info label="Proof Location" value={complaint.proofLocationLabel} />
+              <Info label="Proof Justification" value={complaint.proofLocationJustification || "-"} />
               <Info label="Complaint For" value={complaint.complaintFor === "known_member" ? "Known member" : "Self"} />
               <Info label="Affected Person" value={complaint.affectedPersonName || "-"} />
               <Info label="Affected Contact" value={complaint.affectedPersonMobile || "-"} />
@@ -354,6 +356,7 @@ function CameraCapture({ label, value, onCapture }) {
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
   const readinessTimerRef = useRef(null);
+  const attachAttemptsRef = useRef(0);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -396,15 +399,29 @@ function CameraCapture({ label, value, onCapture }) {
 
   async function attachStreamToVideo(video = videoRef.current) {
     if (!video || !streamRef.current) return;
-    video.srcObject = streamRef.current;
+    attachAttemptsRef.current += 1;
     video.muted = true;
+    video.defaultMuted = true;
+    video.autoplay = true;
     video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("autoplay", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    if (video.srcObject !== streamRef.current) {
+      video.srcObject = streamRef.current;
+    }
+    video.load();
     try {
       await video.play();
     } catch {
       // Some browsers resolve play only after metadata is available.
     }
-    waitForVideoFrame(video);
+    if ("requestVideoFrameCallback" in video) {
+      video.requestVideoFrameCallback(() => waitForVideoFrame(video));
+    } else {
+      waitForVideoFrame(video);
+    }
   }
 
   function stopCamera() {
@@ -414,6 +431,7 @@ function CameraCapture({ label, value, onCapture }) {
       streamRef.current = null;
     }
     if (videoRef.current) videoRef.current.srcObject = null;
+    attachAttemptsRef.current = 0;
     setCameraOpen(false);
     setCameraReady(false);
   }
@@ -428,15 +446,16 @@ function CameraCapture({ label, value, onCapture }) {
     }
     try {
       const video = deviceId
-        ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
+        ? { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 480 } }
+        : { facingMode: { ideal: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } };
       const stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
       streamRef.current = stream;
       setCameraOpen(true);
       await loadCameraDevices();
-      window.setTimeout(() => attachStreamToVideo(), 0);
+      window.setTimeout(() => attachStreamToVideo(), 50);
       readinessTimerRef.current = window.setTimeout(() => {
-        setError("If the preview is black, switch camera or use Device Camera. The stream is open but the browser may be returning a blank camera feed.");
+        attachStreamToVideo();
+        setError("If the preview is black, tap the preview once, switch camera, or use Device Camera. The stream is open but the browser has not painted a frame yet.");
       }, 5000);
     } catch {
       try {
@@ -444,7 +463,7 @@ function CameraCapture({ label, value, onCapture }) {
         streamRef.current = stream;
         setCameraOpen(true);
         await loadCameraDevices();
-        window.setTimeout(() => attachStreamToVideo(), 0);
+        window.setTimeout(() => attachStreamToVideo(), 50);
       } catch {
         setError("Camera permission was denied or no camera was found. Use Device Camera if your browser supports it.");
       }
@@ -523,7 +542,24 @@ function CameraCapture({ label, value, onCapture }) {
           </select>
         ) : null}
         {cameraOpen ? (
-          <video ref={videoRef} className="aspect-video w-full rounded-md bg-black object-cover" autoPlay playsInline muted onLoadedMetadata={(event) => attachStreamToVideo(event.currentTarget)} onCanPlay={(event) => waitForVideoFrame(event.currentTarget)} />
+          <button type="button" className="block w-full overflow-hidden rounded-md bg-black" onClick={() => attachStreamToVideo()} aria-label="Restart camera preview">
+            <video
+              ref={(node) => {
+                videoRef.current = node;
+                if (node && streamRef.current) {
+                  attachStreamToVideo(node);
+                }
+              }}
+              className="aspect-video w-full bg-black object-cover"
+              autoPlay
+              playsInline
+              muted
+              controls={false}
+              onLoadedMetadata={(event) => attachStreamToVideo(event.currentTarget)}
+              onCanPlay={(event) => waitForVideoFrame(event.currentTarget)}
+              onPlaying={(event) => waitForVideoFrame(event.currentTarget)}
+            />
+          </button>
         ) : previewUrl ? (
           <img className="aspect-video w-full rounded-md object-cover" src={previewUrl} alt="Captured field evidence" />
         ) : (
@@ -575,6 +611,11 @@ function mapComplaint(item) {
     affectedPersonMobile: item.affected_person_mobile || "",
     affectedPersonRelationship: item.affected_person_relationship || "",
     affectedContact: item.complaint_for === "known_member" ? (item.affected_person_mobile || item.affected_person_name || "-") : item.citizen?.mobile_number || "-",
+    proofLocation: item.citizen_proof_location || {},
+    proofLocationLabel: item.citizen_proof_location?.latitude
+      ? `${item.citizen_proof_location.matches_complaint_location ? "Matched" : "Mismatch"} (${Math.round(item.citizen_proof_location.distance_meters || 0)} m)`
+      : "Not captured",
+    proofLocationJustification: item.citizen_proof_location?.justification || "",
     status: humanize(item.status || "submitted"),
     department: item.assigned_department?.name || "-",
     location: item.address || item.ward || "-",

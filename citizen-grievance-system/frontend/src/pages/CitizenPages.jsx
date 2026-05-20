@@ -12,6 +12,36 @@ const citizenNav = [
   { to: "/notifications", label: "Alerts", icon: "notifications" },
 ];
 
+const PROOF_LOCATION_MATCH_METERS = 250;
+
+function distanceMeters(first, second) {
+  if (!first?.latitude || !first?.longitude || !second?.latitude || !second?.longitude) return null;
+  const radius = 6371000;
+  const lat1 = (Number(first.latitude) * Math.PI) / 180;
+  const lat2 = (Number(second.latitude) * Math.PI) / 180;
+  const deltaLat = ((Number(second.latitude) - Number(first.latitude)) * Math.PI) / 180;
+  const deltaLon = ((Number(second.longitude) - Number(first.longitude)) * Math.PI) / 180;
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
+  return Math.round(radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function getCurrentCoords() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not available in this browser."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      }),
+      () => reject(new Error("Location permission is required for live proof.")),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  });
+}
+
 function CitizenShell({ children }) {
   const navigate = useNavigate();
   const user = getCurrentUser("citizen");
@@ -161,6 +191,8 @@ export function SubmitComplaintPage() {
     mobile: "",
     relationship: "",
   });
+  const [liveProof, setLiveProof] = useState(null);
+  const [proofJustification, setProofJustification] = useState("");
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const [location, setLocation] = useState({
@@ -174,7 +206,13 @@ export function SubmitComplaintPage() {
   async function submit(event) {
     event.preventDefault();
     setMessage("");
+    const proofMismatch = complaintFor === "self" && liveProof && !liveProof.matchesLocation;
+    if (proofMismatch && !proofJustification.trim()) {
+      setMessage("Add a short justification because the live proof location does not match the complaint location.");
+      return;
+    }
     try {
+      const uploadAttachments = liveProof?.file ? [...attachments, liveProof.file] : attachments;
       const data = await api.createComplaint({
         text,
         latitude: location.latitude,
@@ -187,7 +225,12 @@ export function SubmitComplaintPage() {
         affected_person_name: complaintFor === "known_member" ? affectedPerson.name : "",
         affected_person_mobile: complaintFor === "known_member" ? affectedPerson.mobile : "",
         affected_person_relationship: complaintFor === "known_member" ? affectedPerson.relationship : "",
-        attachments,
+        proof_latitude: liveProof?.latitude || "",
+        proof_longitude: liveProof?.longitude || "",
+        proof_location_match: liveProof ? String(liveProof.matchesLocation) : "",
+        proof_location_distance_meters: liveProof?.distanceMeters ?? "",
+        proof_location_justification: proofMismatch ? proofJustification : "",
+        attachments: uploadAttachments,
       });
       navigate("/submitted", { state: { complaint: data.complaint } });
     } catch (error) {
@@ -350,6 +393,23 @@ export function SubmitComplaintPage() {
             {attachments.length ? (
               <p className="text-sm text-text-muted">{attachments.length} proof file(s) selected.</p>
             ) : null}
+            {complaintFor === "self" ? (
+              <CitizenLiveProofCapture complaintLocation={location} value={liveProof} onCapture={(proof) => {
+                setLiveProof(proof);
+                if (proof?.matchesLocation) setProofJustification("");
+              }} />
+            ) : null}
+            {complaintFor === "self" && liveProof && !liveProof.matchesLocation ? (
+              <Field label="Why does live photo location not match?">
+                <textarea
+                  className={`${inputClass} min-h-24`}
+                  value={proofJustification}
+                  onChange={(event) => setProofJustification(event.target.value)}
+                  placeholder="Example: I am submitting from nearby because the exact spot is unsafe / blocked / inaccessible..."
+                  required
+                />
+              </Field>
+            ) : null}
           </div>
         </Card>
 
@@ -361,7 +421,7 @@ export function SubmitComplaintPage() {
         </Card>
 
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-          <Button className="px-8 py-3" disabled={!text || !location.latitude || !location.longitude || (complaintFor === "known_member" && (!affectedPerson.name || !affectedPerson.mobile))}>
+          <Button className="px-8 py-3" disabled={!text || !location.latitude || !location.longitude || (complaintFor === "known_member" && (!affectedPerson.name || !affectedPerson.mobile)) || (complaintFor === "self" && liveProof && !liveProof.matchesLocation && !proofJustification.trim())}>
             Submit Complaint
           </Button>
           {message ? <p className="text-sm text-danger">{message}</p> : null}
@@ -611,6 +671,176 @@ function EmptyState({ title, message, action }) {
       <p className="mt-2 text-sm text-text-muted">{message}</p>
       {action ? <div className="mt-5">{action}</div> : null}
     </Card>
+  );
+}
+
+function CitizenLiveProofCapture({ complaintLocation, value, onCapture }) {
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [message, setMessage] = useState("");
+
+  function stopCamera() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraOpen(false);
+    setCameraReady(false);
+  }
+
+  async function attachStream(video = videoRef.current) {
+    if (!video || !streamRef.current) return;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("autoplay", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+    if (video.srcObject !== streamRef.current) video.srcObject = streamRef.current;
+    video.load();
+    try {
+      await video.play();
+    } catch {
+      setMessage("Tap the preview if the live feed stays black.");
+    }
+  }
+
+  function waitForFrame(video) {
+    if (video?.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+      setCameraReady(true);
+    }
+  }
+
+  async function openCamera() {
+    setMessage("");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMessage("Live camera is not available in this browser. Use Device Camera.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+      window.setTimeout(() => attachStream(), 50);
+    } catch {
+      setMessage("Camera permission was denied. Use Device Camera if available.");
+    }
+  }
+
+  async function buildProof(file) {
+    setMessage("Capturing proof location...");
+    try {
+      const coords = await getCurrentCoords();
+      const distance = distanceMeters(complaintLocation, coords);
+      const matchesLocation = distance === null || distance <= PROOF_LOCATION_MATCH_METERS;
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      const nextPreview = URL.createObjectURL(file);
+      setPreviewUrl(nextPreview);
+      onCapture({
+        file,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        distanceMeters: distance,
+        matchesLocation,
+      });
+      setMessage(matchesLocation ? "Live proof location matches the complaint location." : "Live proof location does not match. Add a justification below.");
+    } catch (error) {
+      setMessage(error.message || "Could not capture proof location.");
+    }
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setMessage("Camera is still starting. Wait for preview, tap it once, or use Device Camera.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setMessage("Could not capture photo. Use Device Camera instead.");
+        return;
+      }
+      const file = new File([blob], `citizen-live-proof-${Date.now()}.jpg`, { type: "image/jpeg" });
+      stopCamera();
+      buildProof(file);
+    }, "image/jpeg", 0.92);
+  }
+
+  function handleNativePhoto(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    stopCamera();
+    buildProof(file);
+  }
+
+  useEffect(() => () => {
+    stopCamera();
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  return (
+    <Field label="Live photo proof with location">
+      <div className="grid gap-3 rounded-md border border-border bg-surface-soft p-3">
+        {cameraOpen ? (
+          <button type="button" className="block overflow-hidden rounded-md bg-black" onClick={() => attachStream()} aria-label="Restart live preview">
+            <video
+              ref={(node) => {
+                videoRef.current = node;
+                if (node && streamRef.current) attachStream(node);
+              }}
+              className="aspect-video w-full bg-black object-cover"
+              autoPlay
+              playsInline
+              muted
+              controls={false}
+              onLoadedMetadata={(event) => attachStream(event.currentTarget)}
+              onCanPlay={(event) => waitForFrame(event.currentTarget)}
+              onPlaying={(event) => waitForFrame(event.currentTarget)}
+            />
+          </button>
+        ) : previewUrl ? (
+          <img className="aspect-video w-full rounded-md object-cover" src={previewUrl} alt="Live proof preview" />
+        ) : (
+          <div className="flex aspect-video items-center justify-center rounded-md border border-dashed border-border bg-white px-4 text-center text-sm text-text-muted">
+            Capture a live proof photo to compare your current location with the complaint location.
+          </div>
+        )}
+        <input ref={fileInputRef} className="hidden" type="file" accept="image/*" capture="environment" onChange={handleNativePhoto} />
+        <div className="flex flex-wrap gap-2">
+          {!cameraOpen ? (
+            <>
+              <Button type="button" variant="secondary" onClick={openCamera}><Icon name="photo_camera" /> Open Live Camera</Button>
+              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}><Icon name="add_a_photo" /> Device Camera</Button>
+            </>
+          ) : (
+            <>
+              <Button type="button" variant="primary" onClick={capturePhoto} disabled={!cameraReady}><Icon name="camera" /> {cameraReady ? "Capture Proof" : "Starting Camera"}</Button>
+              <Button type="button" variant="outline" onClick={stopCamera}>Cancel</Button>
+            </>
+          )}
+          {value ? <Badge tone={value.matchesLocation ? "green" : "amber"}>{value.matchesLocation ? "Location matched" : "Justification needed"}</Badge> : null}
+        </div>
+        {value?.distanceMeters !== null && value?.distanceMeters !== undefined ? (
+          <p className="text-sm text-text-muted">Distance from complaint location: {value.distanceMeters} meters.</p>
+        ) : null}
+        {message ? <p className={`text-sm ${value && !value.matchesLocation ? "text-danger" : "text-text-muted"}`}>{message}</p> : null}
+      </div>
+    </Field>
   );
 }
 

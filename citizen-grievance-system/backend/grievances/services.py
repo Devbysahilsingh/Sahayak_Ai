@@ -445,6 +445,7 @@ def complaint_to_dict(complaint):
         "affected_person_name": complaint.affected_person_name,
         "affected_person_mobile": complaint.affected_person_mobile,
         "affected_person_relationship": complaint.affected_person_relationship,
+        "citizen_proof_location": complaint.citizen_proof_location,
         "location": complaint.location,
         "latitude": complaint.latitude,
         "longitude": complaint.longitude,
@@ -1060,6 +1061,20 @@ def create_complaint(citizen, payload, uploaded_files=None):
     affected_person_relationship = (payload.get("affected_person_relationship") or "").strip()
     if complaint_for == "known_member" and (not affected_person_name or not affected_person_mobile):
         raise ValueError("Affected member name and contact number are required.")
+    proof_location = {}
+    proof_latitude = payload.get("proof_latitude")
+    proof_longitude = payload.get("proof_longitude")
+    if proof_latitude not in (None, "") and proof_longitude not in (None, ""):
+        proof_match_raw = str(payload.get("proof_location_match", "")).strip().lower()
+        proof_location = {
+            "latitude": float(proof_latitude),
+            "longitude": float(proof_longitude),
+            "distance_meters": float(payload.get("proof_location_distance_meters") or 0),
+            "matches_complaint_location": proof_match_raw in ["true", "1", "yes", "matched"],
+            "justification": (payload.get("proof_location_justification") or "").strip(),
+        }
+        if complaint_for == "self" and not proof_location["matches_complaint_location"] and not proof_location["justification"]:
+            raise ValueError("Justification is required when live proof location does not match complaint location.")
 
     citizen_attachments = save_uploaded_files(
         uploaded_files or [],
@@ -1086,6 +1101,7 @@ def create_complaint(citizen, payload, uploaded_files=None):
         affected_person_name=affected_person_name,
         affected_person_mobile=affected_person_mobile,
         affected_person_relationship=affected_person_relationship,
+        citizen_proof_location=proof_location,
         location=location,
         latitude=latitude,
         longitude=longitude,

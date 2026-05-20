@@ -134,6 +134,7 @@ class Complaint(TimestampedDocument):
     affected_person_name = StringField(default="")
     affected_person_mobile = StringField(default="")
     affected_person_relationship = StringField(default="")
+    citizen_proof_location = DictField(default=dict)
     location = DictField(default=dict)
     latitude = FloatField()
     longitude = FloatField()
