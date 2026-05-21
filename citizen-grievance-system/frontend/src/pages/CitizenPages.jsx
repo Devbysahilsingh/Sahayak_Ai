@@ -212,7 +212,7 @@ export function SubmitComplaintPage() {
       return;
     }
     try {
-      const uploadAttachments = liveProof?.file ? [...attachments, liveProof.file] : attachments;
+      const uploadAttachments = complaintFor === "self" ? (liveProof?.file ? [liveProof.file] : []) : attachments;
       const data = await api.createComplaint({
         text,
         latitude: location.latitude,
@@ -334,7 +334,10 @@ export function SubmitComplaintPage() {
                   className={`rounded-md border px-4 py-3 text-left font-semibold transition ${
                     complaintFor === "self" ? "border-secondary bg-secondary/10 text-primary" : "border-border bg-white text-text-muted hover:border-secondary"
                   }`}
-                  onClick={() => setComplaintFor("self")}
+                  onClick={() => {
+                    setComplaintFor("self");
+                    setAttachments([]);
+                  }}
                 >
                   <Icon name="person" className="mr-2 text-secondary" />
                   For myself
@@ -344,7 +347,11 @@ export function SubmitComplaintPage() {
                   className={`rounded-md border px-4 py-3 text-left font-semibold transition ${
                     complaintFor === "known_member" ? "border-secondary bg-secondary/10 text-primary" : "border-border bg-white text-text-muted hover:border-secondary"
                   }`}
-                  onClick={() => setComplaintFor("known_member")}
+                  onClick={() => {
+                    setComplaintFor("known_member");
+                    setLiveProof(null);
+                    setProofJustification("");
+                  }}
                 >
                   <Icon name="group" className="mr-2 text-secondary" />
                   For a known member
@@ -381,34 +388,21 @@ export function SubmitComplaintPage() {
                 </Field>
               </div>
             ) : null}
-            <Field label="Photo or video proof (optional)">
-              <input
-                className={inputClass}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                onChange={(event) => setAttachments(Array.from(event.target.files || []))}
-              />
-            </Field>
-            {attachments.length ? (
-              <p className="text-sm text-text-muted">{attachments.length} proof file(s) selected.</p>
-            ) : null}
-            {complaintFor === "self" ? (
-              <CitizenLiveProofCapture complaintLocation={location} value={liveProof} onCapture={(proof) => {
-                setLiveProof(proof);
-                if (proof?.matchesLocation) setProofJustification("");
-              }} />
-            ) : null}
-            {complaintFor === "self" && liveProof && !liveProof.matchesLocation ? (
-              <Field label="Why does live photo location not match?">
-                <textarea
-                  className={`${inputClass} min-h-24`}
-                  value={proofJustification}
-                  onChange={(event) => setProofJustification(event.target.value)}
-                  placeholder="Example: I am submitting from nearby because the exact spot is unsafe / blocked / inaccessible..."
-                  required
-                />
-              </Field>
+            {complaintFor === "known_member" ? (
+              <>
+                <Field label="Photo or video proof (optional)">
+                  <input
+                    className={inputClass}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={(event) => setAttachments(Array.from(event.target.files || []))}
+                  />
+                </Field>
+                {attachments.length ? (
+                  <p className="text-sm text-text-muted">{attachments.length} proof file(s) selected.</p>
+                ) : null}
+              </>
             ) : null}
           </div>
         </Card>
@@ -419,6 +413,29 @@ export function SubmitComplaintPage() {
           </h2>
           <LocationPicker value={location} onChange={setLocation} />
         </Card>
+
+        {complaintFor === "self" ? (
+          <Card className="p-6">
+            <h2 className="mb-4 font-display text-xl font-bold text-primary">Proof Photo</h2>
+            <CitizenLiveProofCapture complaintLocation={location} value={liveProof} onCapture={(proof) => {
+              setLiveProof(proof);
+              if (proof?.matchesLocation) setProofJustification("");
+            }} />
+            {liveProof && !liveProof.matchesLocation ? (
+              <div className="mt-4">
+                <Field label="Why does live photo location not match?">
+                  <textarea
+                    className={`${inputClass} min-h-24`}
+                    value={proofJustification}
+                    onChange={(event) => setProofJustification(event.target.value)}
+                    placeholder="Example: I am submitting from nearby because the exact spot is unsafe / blocked / inaccessible..."
+                    required
+                  />
+                </Field>
+              </div>
+            ) : null}
+          </Card>
+        ) : null}
 
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <Button className="px-8 py-3" disabled={!text || !location.latitude || !location.longitude || (complaintFor === "known_member" && (!affectedPerson.name || !affectedPerson.mobile)) || (complaintFor === "self" && liveProof && !liveProof.matchesLocation && !proofJustification.trim())}>
@@ -868,7 +885,6 @@ function mapComplaint(item) {
     language: item.language || "-",
     rejectionReason: item.ai_rejection_reason || "",
     aiDepartments: item.ai_departments || [],
-    sentiment: item.sentiment || "-",
     summary: item.summary || "",
     timeline: item.timeline || [],
     attachments: item.attachments || [],

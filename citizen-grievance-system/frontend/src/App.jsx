@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
+import HomePage from "./pages/HomePage";
 import LoginPage, { WorkerSignupPage } from "./pages/LoginPage";
 import {
   ComplaintTrackingPage,
@@ -28,7 +28,8 @@ import RouteGuard from "./components/RouteGuard";
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/home" element={<HomePage />} />
       <Route path="/login" element={<LoginPage portal="citizen" />} />
       <Route path="/worker/login" element={<LoginPage portal="worker" />} />
       <Route path="/worker/signup" element={<WorkerSignupPage />} />
@@ -61,7 +62,6 @@ export default function App() {
     </Routes>
   );
 }
-
 
 
 

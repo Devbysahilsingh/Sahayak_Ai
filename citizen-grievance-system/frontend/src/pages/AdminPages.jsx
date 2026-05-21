@@ -485,10 +485,8 @@ export function AdminComplaintDetailPage() {
                 ["Validity Confidence", `${Math.round(complaint.validityConfidence * 100)}%`],
                 ["Confidence", `${complaint.confidence}%`],
                 ["Priority", complaint.priority],
-                ["Sentiment", complaint.sentiment],
                 ["Language", complaint.language],
                 ["Translation Source", complaint.translationSource || "-"],
-                ["Sentiment Score", "Not returned by current AI engine"],
                 ["Summary", complaint.summary],
                 ["Rejection Reason", complaint.rejectionReason || "-"],
               ]}
@@ -1190,7 +1188,6 @@ function mapComplaint(item) {
     rejectionReason: item.ai_rejection_reason || "",
     primaryDepartmentLabel: item.primary_department_label || "",
     secondaryDepartmentLabels: item.secondary_department_labels || [],
-    sentiment: item.sentiment || "-",
     summary: item.summary || "",
     timeline: item.timeline || [],
     attachments: item.attachments || [],

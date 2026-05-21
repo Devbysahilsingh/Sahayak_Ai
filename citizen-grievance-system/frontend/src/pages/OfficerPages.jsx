@@ -302,7 +302,6 @@ export function OfficerComplaintDetailPage() {
             <div className="grid gap-4 md:grid-cols-3">
               <Info label="Category" value={complaint.category} />
               <Info label="AI Confidence" value={`${complaint.confidence}%`} />
-              <Info label="Sentiment" value={complaint.sentiment} />
               <Info label="SLA Deadline" value={complaint.sla} />
               <Info label="ETA" value={complaint.eta} />
               <Info label="Citizen Proof" value={complaint.hasCitizenProof ? `${complaint.citizenProofCount} file(s)` : "Not uploaded"} />
@@ -624,7 +623,6 @@ function mapComplaint(item) {
     submittedAtRaw: item.created_at || "",
     sla: item.sla_deadline ? formatDateTime(item.sla_deadline) : "Waiting for admin response",
     eta: item.eta_approved && item.estimated_resolution_hours ? `${item.estimated_resolution_hours} hours` : "Waiting for admin response",
-    sentiment: item.sentiment || "-",
     summary: item.summary || "",
     attachments: item.attachments || [],
     hasCitizenProof: Boolean(item.has_citizen_proof),
